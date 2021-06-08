@@ -1,8 +1,8 @@
 /* This file originated from website LearnOpenGL.com, which distributes the code
 with the following information regarding licensing:
 
-All code samples, unless explicitly stated otherwise, are licensed under the terms 
-of the CC BY-NC 4.0 license as published by Creative Commons, either version 4 of 
+All code samples, unless explicitly stated otherwise, are licensed under the terms
+of the CC BY-NC 4.0 license as published by Creative Commons, either version 4 of
 the License, or (at your option) any later version. You can find a human-readable format of the license
 
 https://creativecommons.org/licenses/by-nc/4.0/
@@ -26,15 +26,17 @@ enum Camera_Movement {
     FORWARD,
     BACKWARD,
     LEFT,
-    RIGHT
+    RIGHT,
+    UP,
+    DOWN
 };
 
 // Default camera values
-const float YAW         = -90.0f;
-const float PITCH       =  0.0f;
-const float SPEED       =  2.5f;
-const float SENSITIVITY =  0.1f;
-const float ZOOM        =  45.0f;
+const float YAW = -90.0f;
+const float PITCH = 0.0f;
+const float SPEED = 2.5f;
+const float SENSITIVITY = 0.1f;
+const float ZOOM = 45.0f;
 
 
 // An abstract camera class that processes input and calculates the corresponding Euler Angles, Vectors and Matrices for use in OpenGL
@@ -92,15 +94,22 @@ public:
             Position -= Right * velocity;
         if (direction == RIGHT)
             Position += Right * velocity;
+        if (direction == UP)
+            Position -= Up * velocity;
+        if (direction == DOWN)
+            Position += Up * velocity;
+
     }
 
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
+    // handles changes in orientation
+
     void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true)
     {
         xoffset *= MouseSensitivity;
         yoffset *= MouseSensitivity;
 
-        Yaw   += xoffset;
+        Yaw += xoffset;
         Pitch += yoffset;
 
         // make sure that when pitch is out of bounds, screen doesn't get flipped
@@ -117,13 +126,14 @@ public:
     }
 
     // processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
+    // zoom value is clamped to the range [1.0, 45.0] degrees.
     void ProcessMouseScroll(float yoffset)
     {
         Zoom -= (float)yoffset;
         if (Zoom < 1.0f)
             Zoom = 1.0f;
         if (Zoom > 45.0f)
-            Zoom = 45.0f; 
+            Zoom = 45.0f;
     }
 
 private:
@@ -138,7 +148,7 @@ private:
         Front = glm::normalize(front);
         // also re-calculate the Right and Up vector
         Right = glm::normalize(glm::cross(Front, WorldUp));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-        Up    = glm::normalize(glm::cross(Right, Front));
+        Up = glm::normalize(glm::cross(Right, Front));
     }
 };
 #endif
