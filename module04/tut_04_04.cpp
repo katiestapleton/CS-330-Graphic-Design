@@ -232,9 +232,9 @@ void UProcessKeyboard(GLFWwindow* window)
         gCamera.ProcessKeyboard(RIGHT, gDeltaTime);
     //move scene down, up
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-      //  gCamera.ProcessKeyboard(UP, gDeltaTime);
+       gCamera.ProcessKeyboard(UP, gDeltaTime);
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-       // gCamera.ProcessKeyboard(DOWN, gDeltaTime);
+       gCamera.ProcessKeyboard(DOWN, gDeltaTime);
 }
 
 
