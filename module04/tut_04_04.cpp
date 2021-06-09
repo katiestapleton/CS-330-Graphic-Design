@@ -423,6 +423,8 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 void render()
 {
     // ?? add glClear() back to here ??
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     // declare objects
     glm::mat4 scale;
@@ -431,12 +433,13 @@ void render()
     glm::mat4 model = translation * rotation * scale;;
     GLint modelLoc;
 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
      // **********************************
     // dresser cuboid
     // create model view: scale, rotate, translate
     scale = glm::scale(glm::vec3(1.3f, 1.2f, 1.3f));
     rotation = glm::rotate(0.0f, glm::vec3(0.0f, 0.5f, 0.0f));
-    translation = glm::translate(glm::vec3(-4.6f, -1.5f, -1.6f));
+    translation = glm::translate(glm::vec3(-4.0f, 0.5f, 1.0f));
 
     // Model matrix: transformations are applied right-to-left order
     model = translation * rotation * scale;
@@ -456,14 +459,14 @@ void render()
     // uses same rotation as dresser cuboid. does not need to be redefined
    
     // scale for legs (uniform size for all 4 legs)
-    scale = glm::scale(glm::vec3(0.15f, 0.4f, 0.2f));
+    scale = glm::scale(glm::vec3(0.15f, 0.3f, 0.2f));
 
     // each leg has a unique position
     glm::vec3 legPosition[] = {
-    glm::vec3(-3.5f, -1.8f, -0.6f), // right front leg
-    glm::vec3(-4.5f, -1.8f, -0.6f), // left front leg
-    glm::vec3(-3.5f, -1.8f, -1.6f), // right back leg
-    glm::vec3(-4.5f, -1.8f, -1.6f) // left back leg
+    glm::vec3(-3.5f, -0.1f, 0.5f), // right front leg
+    glm::vec3(-4.5f, -0.1f, 0.5f), // left front leg
+    glm::vec3(-3.5f, -0.1f, 1.5f), // right back leg
+    glm::vec3(-4.5f, -0.1f, 1.5f) // left back leg
     };
 
     // counts the number of objects

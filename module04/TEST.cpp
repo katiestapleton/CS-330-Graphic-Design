@@ -545,7 +545,7 @@ void  createMesh(GLMesh &mesh)
 
     // Plane vertex data
     // FIXME: redo positioning
-    GLfloat verts[] = {
+    GLfloat planePositions[] = {
         // Vertex Positions    // Colors (r,g,b,a)
         -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
          0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
@@ -602,7 +602,7 @@ void  createMesh(GLMesh &mesh)
 
     // Create VBO
     glGenBuffers(2, &mesh.vbo);
-    // ***** VBOSObjection ----------------------------------
+    // **------ VBOSObjection -------------------------------------
     // ** Activates the buffer & Sends vertex or coordinate data to the GPU
     // ** IMPORTANT: add set of bind buffer and buffer data per object/float array
 
