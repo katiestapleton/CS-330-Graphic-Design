@@ -267,8 +267,6 @@ void switchMVProjection(GLFWwindow* window, int key, int scancode, int action, i
         //gCamera.ProcessKeyboard(DOWN, gDeltaTime);
         //glm::mat4 projection = glm::perspective(glm::radians(gCamera.Zoom), (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
         glm::mat4 projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);
-        GLint projLoc = glGetUniformLocation(gProgramId, "projection");
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
     }
 }
 
@@ -289,9 +287,6 @@ void enableView(GLFWwindow* window)
 
     // defaulted to perspective projection
     glm::mat4 projection = glm::perspective(glm::radians(gCamera.Zoom), (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
-    GLint projLoc = glGetUniformLocation(gProgramId, "projection");
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
 
     // switched between Ortho and Perspective projection via key callback
     // source: https://www.glfw.org/docs/latest/input_guide.html#input_keyboard
@@ -307,16 +302,19 @@ void enableView(GLFWwindow* window)
      * unable to find materials that matches situation. some material too complex for me at this time
      */
      // switches between Ortho and Perspective projection via key callback
-   // glfwSetKeyCallback(window, switchMVProjection);
+    glfwSetKeyCallback(window, switchMVProjection);
 
-    // code does responsed, but only when holding key P. Uncomment to test
+    /* code does responsed, but only when holding key P. Uncomment to test
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
     {
         glm::mat4 projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);
-        projLoc = glGetUniformLocation(gProgramId, "projection");
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
     }
-    
+    */
+
+
+    GLint projLoc = glGetUniformLocation(gProgramId, "projection");
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
     // Set the shader to be used
     glUseProgram(gProgramId);
 };
@@ -499,7 +497,54 @@ void render()
 // Implements the  createMesh function
 void  createMesh(GLMesh &mesh)
 {
-    // Vertex data
+    // Cube vertex data
+    GLfloat cubePositions[] = {
+        // Vertex Positions    // Colors (r,g,b,a)
+        -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+
+        -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+
+        -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+
+         0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f
+    };
+
+    // Plane vertex data
+    // FIXME: redo positioning
     GLfloat verts[] = {
         // Vertex Positions    // Colors (r,g,b,a)
         -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
@@ -548,16 +593,34 @@ void  createMesh(GLMesh &mesh)
     const GLuint floatsPerVertex = 3;
     const GLuint floatsPerColor = 4;
 
+
     mesh.nVertices = sizeof(verts) / (sizeof(verts[0]) * (floatsPerVertex + floatsPerColor));
 
-    glGenVertexArrays(1, &mesh.vao); // we can also generate multiple VAOs or buffers at the same time
+
+    glGenVertexArrays(2, &mesh.vao); // we can also generate multiple VAOs or buffers at the same time
     glBindVertexArray(mesh.vao);
 
     // Create VBO
-    glGenBuffers(1, &mesh.vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo); // Activates the buffer
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW); // Sends vertex or coordinate data to the GPU
+    glGenBuffers(2, &mesh.vbo);
+    // ***** VBOSObjection ----------------------------------
+    // ** Activates the buffer & Sends vertex or coordinate data to the GPU
+    // ** IMPORTANT: add set of bind buffer and buffer data per object/float array
 
+    // ----- binds/buffer -----
+    // cube
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo[0]); 
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubePositions), cubePositions, GL_STATIC_DRAW);
+
+    // plane 
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(planePositions), planePositions, GL_STATIC_DRAW);
+
+    // Source: Computer Graphics Programming in OpenGL with C++
+    // Pages: Chap 4.7 
+    // Author: V Scott Gordan and Jo..
+
+
+    // DATA IS UNIVERSAL
     // Strides between vertex coordinates
     GLint stride = sizeof(float) * (floatsPerVertex + floatsPerColor);
 
