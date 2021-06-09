@@ -1,3 +1,4 @@
+// ********** IMPORTS/INCLUDE **********
 // UPDATED CAMERA.H FILE REQUIRED.
 #include <iostream>             // cout, cerr
 #include <cstdlib>              // EXIT_FAILURE
@@ -13,11 +14,8 @@
 
 using namespace std; // Standard namespace
 
-/*Shader program Macro*/
-#ifndef GLSL
-#define GLSL(Version, Source) "#version " #Version " core \n" #Source
-#endif
 
+// ********** NAMESPACE **********
 // Unnamed namespace
 namespace
 {
@@ -54,25 +52,43 @@ namespace
 
 }
 
+// ********** USER-DEFINED FUNCTIONS **********
 /* User-defined Function prototypes to:
  * initialize the program, set the window size,
  * redraw graphics on the window when resized,
  * and render graphics on the screen
  */
-bool UInitialize(int, char*[], GLFWwindow** window);
-void UResizeWindow(GLFWwindow* window, int width, int height);
-void UProcessKeyboard(GLFWwindow* window);
-void switchOrthoPerspective(GLFWwindow* window, int key, int scancode, int action, int mods);
-void UMousePositionCallback(GLFWwindow* window, double xpos, double ypos);
-void UMouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-void UMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
-void UCreateMesh(GLMesh &mesh);
-void UDestroyMesh(GLMesh &mesh);
-void enableView(GLFWwindow* window);
-void URender();
-bool UCreateShaderProgram(const char* vtxShaderSource, const char* fragShaderSource, GLuint &programId);
-void UDestroyShaderProgram(GLuint programId);
 
+bool initializeScene(int, char*[], GLFWwindow** window);
+
+// render
+void render();
+
+// shaders
+bool createShaderProgram(const char* vtxShaderSource, const char* fragShaderSource, GLuint& programId);
+void destroyShaderProgram(GLuint programId);
+
+// mesh
+void createMesh(GLMesh& mesh);
+void destroyMesh(GLMesh& mesh);
+
+// navigation input & output
+void mousePositionCallback(GLFWwindow* window, double xpos, double ypos);
+void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+void keyboardNavigation(GLFWwindow* window);
+
+// user view
+void resizeWindow(GLFWwindow* window, int width, int height);
+void enableView(GLFWwindow* window);
+void switchMVProjection(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+
+// ***** SHADER *****
+/*Shader program Macro*/
+#ifndef GLSL
+#define GLSL(Version, Source) "#version " #Version " core \n" #Source
+#endif
 
 /* Vertex Shader Source Code*/
 const GLchar * vertexShaderSource = GLSL(440,
@@ -106,61 +122,77 @@ const GLchar * fragmentShaderSource = GLSL(440,
     }
 );
 
-
-int main(int argc, char* argv[])
+// Implements the CreateShaders function
+bool createShaderProgram(const char* vtxShaderSource, const char* fragShaderSource, GLuint& programId)
 {
-    if (!UInitialize(argc, argv, &gWindow))
-        return EXIT_FAILURE;
+    // Compilation and linkage error reporting
+    int success = 0;
+    char infoLog[512];
 
-    // Create the mesh
-    UCreateMesh(gMesh); // Calls the function to create the Vertex Buffer Object
+    // Create a Shader program object.
+    programId = glCreateProgram();
 
-    // Create the shader program
-    if (!UCreateShaderProgram(vertexShaderSource, fragmentShaderSource, gProgramId))
-        return EXIT_FAILURE;
+    // Create the vertex and fragment shader objects
+    GLuint vertexShaderId = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
 
-    // Sets the background color of the window to black (it will be implicitely used by glClear)
-    // Converts standard RGB decimal colors (r, g, b, a) into floats.
-    // RGB = (1.0f/255.0) * decimalCode; It doesn't hurt to add .0 to the end
-    float red = (1.0f / 255.0) * 55.0;
-    float grn = (1.0f / 255.0) * 55.0;
-    float blu = (1.0f / 255.0) * 255.0;
-    glClearColor(red, grn, blu, 1.0f);
+    // Retrive the shader source
+    glShaderSource(vertexShaderId, 1, &vtxShaderSource, NULL);
+    glShaderSource(fragmentShaderId, 1, &fragShaderSource, NULL);
 
-    // render loop
-    // -----------
-    while (!glfwWindowShouldClose(gWindow))
+    // Compile the vertex shader, and print compilation errors (if any)
+    glCompileShader(vertexShaderId); // compile the vertex shader
+    // check for shader compile errors
+    glGetShaderiv(vertexShaderId, GL_COMPILE_STATUS, &success);
+    if (!success)
     {
-        // per-frame timing
-        // --------------------
-        float currentFrame = glfwGetTime();
-        gDeltaTime = currentFrame - gLastFrame;
-        gLastFrame = currentFrame;
+        glGetShaderInfoLog(vertexShaderId, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
 
-        // input
-        // -----
-        UProcessKeyboard(gWindow);
-
-        // enable and adjust view
-        enableView(gWindow);
-        // Render this frame
-        URender();
-
-        glfwPollEvents();
+        return false;
     }
 
-    // Release mesh data
-    UDestroyMesh(gMesh);
+    glCompileShader(fragmentShaderId); // compile the fragment shader
+    // check for shader compile errors
+    glGetShaderiv(fragmentShaderId, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShaderId, sizeof(infoLog), NULL, infoLog);
+        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
 
-    // Release shader program
-    UDestroyShaderProgram(gProgramId);
+        return false;
+    }
 
-    exit(EXIT_SUCCESS); // Terminates the program successfully
+    // Attached compiled shaders to the shader program
+    glAttachShader(programId, vertexShaderId);
+    glAttachShader(programId, fragmentShaderId);
+
+    glLinkProgram(programId);   // links the shader program
+    // check for linking errors
+    glGetProgramiv(programId, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        glGetProgramInfoLog(programId, sizeof(infoLog), NULL, infoLog);
+        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+
+        return false;
+    }
+
+    glUseProgram(programId);    // Uses the shader program
+
+    return true;
 }
 
 
+void destroyShaderProgram(GLuint programId)
+{
+    glDeleteProgram(programId);
+}
+
+
+// ********** INTIALIZE LIBRARIES & EVENTS + CREATE WINDOW **********
 // Initialize GLFW, GLEW, and create a window
-bool UInitialize(int argc, char* argv[], GLFWwindow** window)
+bool initializeScene(int argc, char* argv[], GLFWwindow** window)
 {
     // GLFW: initialize and configure
     // ------------------------------
@@ -183,10 +215,10 @@ bool UInitialize(int argc, char* argv[], GLFWwindow** window)
         return false;
     }
     glfwMakeContextCurrent(*window);
-    glfwSetFramebufferSizeCallback(*window, UResizeWindow);
-    glfwSetCursorPosCallback(*window, UMousePositionCallback);
-    glfwSetScrollCallback(*window, UMouseScrollCallback);
-    glfwSetMouseButtonCallback(*window, UMouseButtonCallback);
+    glfwSetFramebufferSizeCallback(*window, resizeWindow);
+    glfwSetCursorPosCallback(*window, mousePositionCallback);
+    glfwSetScrollCallback(*window, mouseScrollCallback);
+    glfwSetMouseButtonCallback(*window, mouseButtonCallback);
 
 
     // tell GLFW to capture mouse
@@ -211,9 +243,86 @@ bool UInitialize(int argc, char* argv[], GLFWwindow** window)
 }
 
 
+// ********** SCREEN CHANGES + PROJECTION ********** 
+// glfw: whenever the window size changed (by OS or user resize) this callback function executes
+void resizeWindow(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}
 
+// switch to Ortho project upon keyboard input
+void switchMVProjection(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+    {
+        std::cout << "Space Key Pressed" << std::endl;
+    }
+
+    // source: https://www.glfw.org/docs/3.3/input_guide.html#input_key
+    // Creates a ortho projection
+    if (key == GLFW_KEY_P && action == GLFW_PRESS)
+        // if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+    {
+        //gCamera.ProcessKeyboard(DOWN, gDeltaTime);
+        //glm::mat4 projection = glm::perspective(glm::radians(gCamera.Zoom), (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);
+    }
+}
+
+void enableView(GLFWwindow* window)
+{    // Enable z-depth
+    glEnable(GL_DEPTH_TEST);
+
+    // Clear the frame and z buffers
+    // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Transforms the camera: move the camera
+    // stationary glm::mat4 view = glm::translate(glm::vec3(0.0f, 0.0f, -5.0f));
+    // camera/view transformation
+    glm::mat4 view = gCamera.GetViewMatrix();
+    GLint viewLoc = glGetUniformLocation(gProgramId, "view");
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+    // defaulted to perspective projection
+    glm::mat4 projection = glm::perspective(glm::radians(gCamera.Zoom), (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
+
+    // switched between Ortho and Perspective projection via key callback
+    // source: https://www.glfw.org/docs/latest/input_guide.html#input_keyboard
+    /* -----FIX ME----- "switches between Ortho and Perspective projection via key callback"
+     * ISSUE: CALLBACK IS NOT RESPONDING PROPERLY.
+     * calls on OrthoPerspective - testing by pressing "space" and looking at the log
+     * however, does not response to key press "p" to change and save view
+     * key press "P" works in Enable function, but only when P is held.
+     * this issue was supposed to resolved by using a callback.
+     * switched between Ortho and Perspective projection via key callback
+     * ATTEMPTED: tried switching views - no changes tried if/else loop - invalid method
+     * RESEARCH: Stackoverflow, OpenGL documents, GLFW documents, how-tos.
+     * unable to find materials that matches situation. some material too complex for me at this time
+     */
+     // switches between Ortho and Perspective projection via key callback
+    glfwSetKeyCallback(window, switchMVProjection);
+
+    /* code does responsed, but only when holding key P. Uncomment to test
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+    {
+        glm::mat4 projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);
+    }
+    */
+
+
+    GLint projLoc = glGetUniformLocation(gProgramId, "projection");
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+    // Set the shader to be used
+    glUseProgram(gProgramId);
+};
+
+
+// ********** KEYBOARD-BASED NAVIGATION **********
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-void UProcessKeyboard(GLFWwindow* window)
+void keyboardNavigation(GLFWwindow* window)
 {
     static const float cameraSpeed = 2.5f;
 
@@ -238,10 +347,10 @@ void UProcessKeyboard(GLFWwindow* window)
 }
 
 
-
+// ********** MOUSE-BASED NAVIGATION **********
 // glfw: whenever the mouse moves, this callback is called
 // -------------------------------------------------------
-void UMousePositionCallback(GLFWwindow* window, double xpos, double ypos)
+void mousePositionCallback(GLFWwindow* window, double xpos, double ypos)
 {
     if (gFirstMouse)
     {
@@ -262,14 +371,14 @@ void UMousePositionCallback(GLFWwindow* window, double xpos, double ypos)
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
-void UMouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
     gCamera.ProcessMouseScroll(yoffset);
 }
 
 // glfw: handle mouse button events
 // --------------------------------
-void UMouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
     switch (button)
     {
@@ -306,87 +415,10 @@ void UMouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-void UResizeWindow(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
 
-
-// switch to Ortho project upon keyboard input
-void switchOrthoPerspective(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    
-    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-    {
-        std::cout << "Space Key Pressed" << std::endl;
-    }
-
-    // source: https://www.glfw.org/docs/3.3/input_guide.html#input_key
-    // Creates a ortho projection
-    if (key == GLFW_KEY_P && action == GLFW_PRESS)
-    // if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
-    {
-        //gCamera.ProcessKeyboard(DOWN, gDeltaTime);
-        //glm::mat4 projection = glm::perspective(glm::radians(gCamera.Zoom), (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
-        glm::mat4 projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);
-    }
-}
-
-void enableView(GLFWwindow* window)
-{    // Enable z-depth
-    glEnable(GL_DEPTH_TEST);
-
-    // Clear the frame and z buffers
-    // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Transforms the camera: move the camera
-    // stationary glm::mat4 view = glm::translate(glm::vec3(0.0f, 0.0f, -5.0f));
-    // camera/view transformation
-    glm::mat4 view = gCamera.GetViewMatrix();
-    GLint viewLoc = glGetUniformLocation(gProgramId, "view");
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-
-    // defaulted to perspective projection
-    glm::mat4 projection = glm::perspective(glm::radians(gCamera.Zoom), (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
-
-    // switched between Ortho and Perspective projection via key callback
-    // source: https://www.glfw.org/docs/latest/input_guide.html#input_keyboard
-    /* -----FIX ME----- "switches between Ortho and Perspective projection via key callback" 
-     * ISSUE: CALLBACK IS NOT RESPONDING PROPERLY.     
-     * calls on OrthoPerspective - testing by pressing "space" and looking at the log 
-     * however, does not response to key press "p" to change and save view
-     * key press "P" works in Enable function, but only when P is held. 
-     * this issue was supposed to resolved by using a callback.
-     * switched between Ortho and Perspective projection via key callback
-     * ATTEMPTED: tried switching views - no changes tried if/else loop - invalid method
-     * RESEARCH: Stackoverflow, OpenGL documents, GLFW documents, how-tos.
-     * unable to find materials that matches situation. some material too complex for me at this time
-     */
-     // switches between Ortho and Perspective projection via key callback
-    glfwSetKeyCallback(window, switchOrthoPerspective);
-
-    /* code does responsed, but only when holding key P. Uncomment to test
-    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
-    {
-        glm::mat4 projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);
-    }
-    */
-
-
-
-
-    GLint projLoc = glGetUniformLocation(gProgramId, "projection");
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-    // Set the shader to be used
-    glUseProgram(gProgramId);
-};
-
-
+// ********** RENDERING **********
 // Function called to render a frame
-void URender()
+void render()
 {
 
     // declare objects
@@ -459,8 +491,8 @@ void URender()
 }
 
 
-// Implements the UCreateMesh function
-void UCreateMesh(GLMesh &mesh)
+// Implements the  createMesh function
+void  createMesh(GLMesh &mesh)
 {
     // color conversion formula
     //converts RGB decimal colors into floats.
@@ -518,76 +550,61 @@ void UCreateMesh(GLMesh &mesh)
 }
 
 
-void UDestroyMesh(GLMesh &mesh)
+void destroyMesh(GLMesh &mesh)
 {
     glDeleteVertexArrays(1, &mesh.vao);
     glDeleteBuffers(1, mesh.vbos);
 }
 
 
-// Implements the UCreateShaders function
-bool UCreateShaderProgram(const char* vtxShaderSource, const char* fragShaderSource, GLuint &programId)
+// ********** MAIN **********
+int main(int argc, char* argv[])
 {
-    // Compilation and linkage error reporting
-    int success = 0;
-    char infoLog[512];
+    if (!initializeScene(argc, argv, &gWindow))
+        return EXIT_FAILURE;
 
-    // Create a Shader program object.
-    programId = glCreateProgram();
+    // Create the mesh
+    createMesh(gMesh); // Calls the function to create the Vertex Buffer Object
 
-    // Create the vertex and fragment shader objects
-    GLuint vertexShaderId = glCreateShader(GL_VERTEX_SHADER);
-    GLuint fragmentShaderId = glCreateShader(GL_FRAGMENT_SHADER);
+   // Create the shader program
+    if (!createShaderProgram(vertexShaderSource, fragmentShaderSource, gProgramId))
+        return EXIT_FAILURE;
 
-    // Retrive the shader source
-    glShaderSource(vertexShaderId, 1, &vtxShaderSource, NULL);
-    glShaderSource(fragmentShaderId, 1, &fragShaderSource, NULL);
+    // Sets the background color of the window to black (it will be implicitely used by glClear)
+    // Converts standard RGB decimal colors (r, g, b, a) into floats.
+    // RGB = (1.0f/255.0) * decimalCode; It doesn't hurt to add .0 to the end
+    float red = (1.0f / 255.0) * 55.0;
+    float grn = (1.0f / 255.0) * 55.0;
+    float blu = (1.0f / 255.0) * 255.0;
+    glClearColor(red, grn, blu, 1.0f);
 
-    // Compile the vertex shader, and print compilation errors (if any)
-    glCompileShader(vertexShaderId); // compile the vertex shader
-    // check for shader compile errors
-    glGetShaderiv(vertexShaderId, GL_COMPILE_STATUS, &success);
-    if (!success)
+    // render loop
+    // -----------
+    while (!glfwWindowShouldClose(gWindow))
     {
-        glGetShaderInfoLog(vertexShaderId, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+        // per-frame timing
+        // --------------------
+        float currentFrame = glfwGetTime();
+        gDeltaTime = currentFrame - gLastFrame;
+        gLastFrame = currentFrame;
 
-        return false;
+        // input
+        // -----
+        keyboardNavigation(gWindow);
+
+        // enable and adjust view
+        enableView(gWindow);
+        // Render this frame
+        render();
+
+        glfwPollEvents();
     }
 
-    glCompileShader(fragmentShaderId); // compile the fragment shader
-    // check for shader compile errors
-    glGetShaderiv(fragmentShaderId, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShaderId, sizeof(infoLog), NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+    // Release mesh data
+    destroyMesh(gMesh);
 
-        return false;
-    }
+    // Release shader program
+    destroyShaderProgram(gProgramId);
 
-    // Attached compiled shaders to the shader program
-    glAttachShader(programId, vertexShaderId);
-    glAttachShader(programId, fragmentShaderId);
-
-    glLinkProgram(programId);   // links the shader program
-    // check for linking errors
-    glGetProgramiv(programId, GL_LINK_STATUS, &success);
-    if (!success)
-    {
-        glGetProgramInfoLog(programId, sizeof(infoLog), NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-
-        return false;
-    }
-
-    glUseProgram(programId);    // Uses the shader program
-
-    return true;
-}
-
-
-void UDestroyShaderProgram(GLuint programId)
-{
-    glDeleteProgram(programId);
+    exit(EXIT_SUCCESS); // Terminates the program successfully
 }
