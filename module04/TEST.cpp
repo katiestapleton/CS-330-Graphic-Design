@@ -267,6 +267,8 @@ void switchMVProjection(GLFWwindow* window, int key, int scancode, int action, i
         //gCamera.ProcessKeyboard(DOWN, gDeltaTime);
         //glm::mat4 projection = glm::perspective(glm::radians(gCamera.Zoom), (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
         glm::mat4 projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);
+        GLint projLoc = glGetUniformLocation(gProgramId, "projection");
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
     }
 }
 
@@ -287,6 +289,8 @@ void enableView(GLFWwindow* window)
 
     // defaulted to perspective projection
     glm::mat4 projection = glm::perspective(glm::radians(gCamera.Zoom), (GLfloat)WINDOW_WIDTH / (GLfloat)WINDOW_HEIGHT, 0.1f, 100.0f);
+    GLint projLoc = glGetUniformLocation(gProgramId, "projection");
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
     // switched between Ortho and Perspective projection via key callback
     // source: https://www.glfw.org/docs/latest/input_guide.html#input_keyboard
@@ -304,16 +308,14 @@ void enableView(GLFWwindow* window)
      // switches between Ortho and Perspective projection via key callback
     glfwSetKeyCallback(window, switchMVProjection);
 
-    /* code does responsed, but only when holding key P. Uncomment to test
+    // code does responsed, but only when holding key P. Uncomment to test
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
     {
         glm::mat4 projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);
+        GLint projLoc = glGetUniformLocation(gProgramId, "projection");
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
     }
-    */
-
-
-    GLint projLoc = glGetUniformLocation(gProgramId, "projection");
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    
 
     // Set the shader to be used
     glUseProgram(gProgramId);
@@ -430,11 +432,12 @@ void render()
     GLint modelLoc;
 
      // **********************************
+     // **********************************
     // dresser cuboid
     // create model view: scale, rotate, translate
     scale = glm::scale(glm::vec3(1.3f, 1.2f, 1.3f));
-    rotation = glm::rotate(0.0f, glm::vec3(0.0f, 0.5f, 0.0f));
-    translation = glm::translate(glm::vec3(-4.6f, -1.5f, -1.6f));
+    rotation = glm::rotate(0.0f, glm::vec3(0.0f, 0.1f, 0.0f));
+    translation = glm::translate(glm::vec3(-4.0f, 0.8f, 1.5f));
 
     // Model matrix: transformations are applied right-to-left order
     model = translation * rotation * scale;
@@ -452,16 +455,16 @@ void render()
     // **********************************
     // small legs (4) cuboid
     // uses same rotation as dresser cuboid. does not need to be redefined
-   
+
     // scale for legs (uniform size for all 4 legs)
-    scale = glm::scale(glm::vec3(0.15f, 0.4f, 0.2f));
+    scale = glm::scale(glm::vec3(0.15f, 0.3f, 0.2f));
 
     // each leg has a unique position
     glm::vec3 legPosition[] = {
-    glm::vec3(-3.5f, -1.8f, -0.6f), // right front leg
-    glm::vec3(-4.5f, -1.8f, -0.6f), // left front leg
-    glm::vec3(-3.5f, -1.8f, -1.6f), // right back leg
-    glm::vec3(-4.5f, -1.8f, -1.6f) // left back leg
+    glm::vec3(-3.5f, 0.1f, 2.0f), // right front leg
+    glm::vec3(-4.5f, 0.1f, 2.0f), // left front leg
+    glm::vec3(-3.5f, 0.1f, 2.0f), // right back leg
+    glm::vec3(-4.5f, 0.1f, 2.0f) // left back leg
     };
 
     // counts the number of objects
@@ -485,6 +488,25 @@ void render()
         glDrawArrays(GL_TRIANGLES, 0, gMesh.nVertices);
     }
 
+    // FIX ME: USES TABLE MESH. UNABLE TO USE PLANE MESH
+   // PLANE - GROUND
+   // create model view: scale, rotate, translate
+    scale = glm::scale(glm::vec3(20.0f, 0.01f, 20.0f));
+    rotation = glm::rotate(0.0f, glm::vec3(0.0f, 0.1f, 0.0f));
+    translation = glm::translate(glm::vec3(0.0f, -0.01f, 10.0f));
+
+    // Model matrix: transformations are applied right-to-left order
+    model = translation * rotation * scale;
+    // Retrieves and passes transform matrices to the Shader program
+    modelLoc = glGetUniformLocation(gProgramId, "model");
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+    // Activate the VBOs contained within the mesh's VA
+    glBindVertexArray(gMesh.vao);
+    // draws primary dresser cube
+    // Draws the triangles
+    glDrawArrays(GL_TRIANGLES, 0, gMesh.nVertices);
+
     //----------------------------------------------------------------
     // Deactivate the Vertex Array Object
     glBindVertexArray(0);
@@ -499,95 +521,61 @@ void  createMesh(GLMesh &mesh)
 {
     // Cube vertex data
     GLfloat cubePositions[] = {
-        // Vertex Positions    // Colors (r,g,b,a)
-        -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-
-        -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-
-        -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-
-         0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f
-    };
+            // Vertex Positions    // Colors (r,g,b,a)
+            // front
+            -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+             0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+             0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+             0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+            -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+            // back
+            -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+             0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+             0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+             0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+            // left side
+            -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+            -0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+            // right side
+             0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+             0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+             0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+             0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+             0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+             0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+             // bottom
+            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+             0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+             0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+             0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+            // top
+            -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+             0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+            -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f
+        };
 
     // Plane vertex data
-    // FIXME: redo positioning
-    GLfloat planePositions[] = {
+    GLfloat planePosition[] = {
         // Vertex Positions    // Colors (r,g,b,a)
-        -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-
-        -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-
-        -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-
-         0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f
+        // bottom
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -0.5f,  0.0,
+         0.5f, -0.5f, -0.5f, 0.0f, 0.4f, 1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, -0.2f, 0.9f,
+         0.5f, -0.5f,  0.5f, 0.0f, -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f,  0.5f, 0.0f, -0.3f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, -0.5,
     };
 
     const GLuint floatsPerVertex = 3;

@@ -433,13 +433,12 @@ void render()
     glm::mat4 model = translation * rotation * scale;;
     GLint modelLoc;
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
      // **********************************
     // dresser cuboid
     // create model view: scale, rotate, translate
     scale = glm::scale(glm::vec3(1.3f, 1.2f, 1.3f));
-    rotation = glm::rotate(0.0f, glm::vec3(0.0f, 0.5f, 0.0f));
-    translation = glm::translate(glm::vec3(-4.0f, 0.5f, 1.0f));
+    rotation = glm::rotate(0.0f, glm::vec3(0.0f, 0.1f, 0.0f));
+    translation = glm::translate(glm::vec3(-4.0f, 0.8f, 1.5f));
 
     // Model matrix: transformations are applied right-to-left order
     model = translation * rotation * scale;
@@ -463,10 +462,10 @@ void render()
 
     // each leg has a unique position
     glm::vec3 legPosition[] = {
-    glm::vec3(-3.5f, -0.1f, 0.5f), // right front leg
-    glm::vec3(-4.5f, -0.1f, 0.5f), // left front leg
-    glm::vec3(-3.5f, -0.1f, 1.5f), // right back leg
-    glm::vec3(-4.5f, -0.1f, 1.5f) // left back leg
+    glm::vec3(-3.5f, 0.1f, 2.0f), // right front leg
+    glm::vec3(-4.5f, 0.1f, 2.0f), // left front leg
+    glm::vec3(-3.5f, 0.1f, 2.0f), // right back leg
+    glm::vec3(-4.5f, 0.1f, 2.0f) // left back leg
     };
 
     // counts the number of objects
@@ -490,6 +489,26 @@ void render()
         glDrawArrays(GL_TRIANGLES, 0, gMesh.nVertices);
     }
 
+    // FIX ME: USES TABLE MESH. UNABLE TO USE PLANE MESH
+   // PLANE - GROUND
+   // create model view: scale, rotate, translate
+    scale = glm::scale(glm::vec3(20.0f, 0.01f, 20.0f));
+    rotation = glm::rotate(0.0f, glm::vec3(0.0f, 0.1f, 0.0f));
+    translation = glm::translate(glm::vec3(0.0f, -0.01f, 10.0f));
+
+    // Model matrix: transformations are applied right-to-left order
+    model = translation * rotation * scale;
+    // Retrieves and passes transform matrices to the Shader program
+    modelLoc = glGetUniformLocation(gProgramId, "model");
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+    // Activate the VBOs contained within the mesh's VA
+    glBindVertexArray(gMesh.vao);
+    // draws primary dresser cube
+    // Draws the triangles
+    glDrawArrays(GL_TRIANGLES, 0, gMesh.nVertices);
+
+
     //----------------------------------------------------------------
     // Deactivate the Vertex Array Object
     glBindVertexArray(0);
@@ -503,43 +522,45 @@ void render()
 void  createMesh(GLMesh &mesh)
 {
     // Vertex data
+    // GLfloat cubePositions[] = {
     GLfloat verts[] = {
         // Vertex Positions    // Colors (r,g,b,a)
+        // front
         -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
          0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
          0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
          0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
         -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
         -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
-
+        // back
         -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
          0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
          0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
          0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
         -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
         -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-
+        // left side
         -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
         -0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
         -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
         -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
         -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
         -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-
+        // right side
          0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
          0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
          0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
          0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
          0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
          0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
-
+         // bottom
         -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
          0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
          0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
          0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
         -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
         -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
-
+        // top
         -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
          0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
          0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
@@ -548,6 +569,19 @@ void  createMesh(GLMesh &mesh)
         -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f
     };
 
+    /*
+        // Plane vertex data
+        GLfloat planePosition[] = {
+        // Vertex Positions    // Colors (r,g,b,a)
+        // bottom
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -0.5f,  0.0,
+         0.5f, -0.5f, -0.5f, 0.0f, 0.4f, 1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, -0.2f, 0.9f,
+         0.5f, -0.5f,  0.5f, 0.0f, -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f,  0.5f, 0.0f, -0.3f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, -0.5,
+    };
+    */
     const GLuint floatsPerVertex = 3;
     const GLuint floatsPerColor = 4;
 
@@ -561,6 +595,35 @@ void  createMesh(GLMesh &mesh)
     glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo); // Activates the buffer
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW); // Sends vertex or coordinate data to the GPU
 
+
+    /* FIX ME: plane and cube. will not execute
+        mesh.nVertices = sizeof(cubePositions) / (sizeof(cubePositions[0]) * (floatsPerVertex + floatsPerColor));
+    // mesh.nVertices = sizeof(planePositions) / (sizeof(planePositions[0]) * (floatsPerVertex + floatsPerColor));
+
+    glGenVertexArrays(2, &mesh.vao); // we can also generate multiple VAOs or buffers at the same time
+    glBindVertexArray(mesh.vao);
+
+    // Create VBO
+    glGenBuffers(2, &mesh.vbo);
+    // ***** VBOSObjection ----------------------------------
+    // ** Activates the buffer & Sends vertex or coordinate data to the GPU
+    // ** IMPORTANT: add set of bind buffer and buffer data per object/float array
+
+    // ----- binds/buffer -----
+    // cube
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo[0]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubePositions), cubePositions, GL_STATIC_DRAW);
+
+    // plane 
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(planePosition), planePosition, GL_STATIC_DRAW);
+
+    // Source: Computer Graphics Programming in OpenGL with C++
+    // Pages: Chap 4.7 
+    // Author: V Scott Gordan and Jo..
+    // **********
+    */
+
     // Strides between vertex coordinates
     GLint stride = sizeof(float) * (floatsPerVertex + floatsPerColor);
 
@@ -568,7 +631,7 @@ void  createMesh(GLMesh &mesh)
     glVertexAttribPointer(0, floatsPerVertex, GL_FLOAT, GL_FALSE, stride, 0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, floatsPerColor, GL_FLOAT, GL_FALSE, stride, (char*)(sizeof(float) * floatsPerVertex));
+    glVertexAttribPointer(1, floatsPerColor, GL_FLOAT, GL_FALSE, stride, (char*)(sizeof(float)* floatsPerVertex));
     glEnableVertexAttribArray(1);
 }
 
