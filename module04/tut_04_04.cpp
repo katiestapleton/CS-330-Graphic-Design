@@ -29,8 +29,8 @@ namespace
     struct GLMesh
     {
         GLuint vao;         // Handle for the vertex array object
-        GLuint vbos[2];     // Handles for the vertex buffer objects
-        GLuint nIndices;    // Number of indices of the mesh
+        GLuint vbo;         // Handle for the vertex buffer object
+        GLuint nVertices;    // Number of indices of the mesh
     };
 
     // Main GLFW window
@@ -420,6 +420,7 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 // Function called to render a frame
 void render()
 {
+    // ?? add glClear() back to here ??
 
     // declare objects
     glm::mat4 scale;
@@ -444,7 +445,8 @@ void render()
     // Activate the VBOs contained within the mesh's VA
     glBindVertexArray(gMesh.vao);
     // draws primary dresser cube
-    glDrawElements(GL_TRIANGLE_STRIP, gMesh.nIndices, GL_UNSIGNED_SHORT, NULL); // Draws the triangle
+    // Draws the triangles
+    glDrawArrays(GL_TRIANGLES, 0, gMesh.nVertices);
 
 
     // **********************************
@@ -476,10 +478,11 @@ void render()
         modelLoc = glGetUniformLocation(gProgramId, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
+        // Activate the VBOs contained within the mesh's VAO
         glBindVertexArray(gMesh.vao);
 
-        // draws each leg
-        glDrawElements(GL_TRIANGLE_STRIP, gMesh.nIndices, GL_UNSIGNED_SHORT, NULL); // Draws the triangle
+        // Draws the triangles
+        glDrawArrays(GL_TRIANGLES, 0, gMesh.nVertices);
     }
 
     //----------------------------------------------------------------
@@ -494,52 +497,67 @@ void render()
 // Implements the  createMesh function
 void  createMesh(GLMesh &mesh)
 {
-    // color conversion formula
-    //converts RGB decimal colors into floats.
-    // Colors(r, g, b, a) enter as decimal code 0.0 - 255.0 (make sure to include the .0 at the end)
-    float dec = (1.0f / 255.0);
-
-
-    // Position and Color data
+    // Vertex data
     GLfloat verts[] = {
-        // CUBE/cuboid  
-        // SOURCE: Triangle strips https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
-        // Vertex Positions    // Colors (r,g,b,a) enter as decimal code 0-255
-        1.0f,  1.0f, 1.0f,   0 * dec, 1 * dec, 73 * dec, 1.0f, // 0 right top front 
-        0.0f,  1.0f, 1.0f,   152 * dec, 116 * dec, 0 * dec, 1.0f, // 1 left top front
-        1.0f,  1.0f, 0.0f,   60 * dec, 116 * dec, 250 * dec, 1.0f, // 2 right top back
-        0.0f,  1.0f, 0.0f,   250 * dec, 0 * dec, 73 * dec, 1.0f, // 3 left top back
+        // Vertex Positions    // Colors (r,g,b,a)
+        -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
 
-         1.0f, 0.0f,  1.0f,  (120 * dec), (255 * dec), (173 * dec), 1.0f, // 4 right bottom front
-         0.0f, 0.0f,  1.0f,  (75 * dec), (0 * dec), (255 * dec), 1.0f, // 5 left bottom front
-         0.0f, 0.0f,  0.0f,  (0 * dec), (116 * dec), (73 * dec), 1.0f, // 6 right bottom back
-         1.0f, 0.0f,  0.0f,  (164 * dec), (116 * dec), (93 * dec), 1.0f,  // 7 left bottom back
+        -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
 
-    };
+        -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
 
-    // Index data to share position data
-    GLushort indices[] = {
-         3, 2, 6, 7, 4, 2, 0,
-         3, 1, 6, 5, 4, 1, 0
+         0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f, 1.0f,
+
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f
     };
 
     const GLuint floatsPerVertex = 3;
     const GLuint floatsPerColor = 4;
 
+    mesh.nVertices = sizeof(verts) / (sizeof(verts[0]) * (floatsPerVertex + floatsPerColor));
+
     glGenVertexArrays(1, &mesh.vao); // we can also generate multiple VAOs or buffers at the same time
     glBindVertexArray(mesh.vao);
 
-    // Create 2 buffers: first one for the vertex data; second one for the indices
-    glGenBuffers(2, mesh.vbos);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbos[0]); // Activates the buffer
+    // Create VBO
+    glGenBuffers(1, &mesh.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo); // Activates the buffer
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW); // Sends vertex or coordinate data to the GPU
 
-    mesh.nIndices = sizeof(indices) / sizeof(indices[0]);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.vbos[1]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    // Strides between vertex coordinates is 6 (x, y, z, r, g, b, a). A tightly packed stride is 0.
-    GLint stride = sizeof(float) * (floatsPerVertex + floatsPerColor);// The number of floats before each
+    // Strides between vertex coordinates
+    GLint stride = sizeof(float) * (floatsPerVertex + floatsPerColor);
 
     // Create Vertex Attribute Pointers
     glVertexAttribPointer(0, floatsPerVertex, GL_FLOAT, GL_FALSE, stride, 0);
@@ -553,7 +571,7 @@ void  createMesh(GLMesh &mesh)
 void destroyMesh(GLMesh &mesh)
 {
     glDeleteVertexArrays(1, &mesh.vao);
-    glDeleteBuffers(1, mesh.vbos);
+    glDeleteBuffers(1, &mesh.vbo);
 }
 
 
