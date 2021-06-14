@@ -45,9 +45,7 @@ namespace
     // Shader program
     GLuint gProgramId;
     // Texture id
-    GLuint gTextureIdSide;
-    GLuint gTextureIdBase;
-    bool gIsBaseOn = true;
+    GLuint gTextureId;
 
     // camera
     Camera gCamera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -104,27 +102,19 @@ void main()
 
 
 /* Fragment Shader Source Code*/
-const GLchar* fragmentShaderSource = GLSL(440, 
-    // Variable to hold incoming color data and texture data from vertex shader
-    in vec2 vertexTextureCoordinate, 
-    in vec4 vertexColor; 
+const GLchar* fragmentShaderSource = GLSL(440,
+    in vec4 vertexColor; // Variable to hold incoming color data from vertex shader
+in vec2 vertexTextureCoordinate;
 
-    out vec4 fragmentColor;
+out vec4 fragmentColor;
 
-    uniform sampler2D uTextureSide;
-    uniform sampler2D uTextureBase;
-    uniform bool multipleTextures;
+uniform sampler2D uTexture;
 
-    void main()
-    {
-        fragmentColor = texture(uTextureSide, vertexTextureCoordinate);
-        if (multipleTextures)
-        {
-            vec4 extraTexture = texture(uTextureBase, vertexTextureCoordinate);
-            if (extraTexture.a != 0.0)
-                fragmentColor = extraTexture;
-        }
-    }
+void main()
+{
+    //fragmentColor = vec4(vertexColor);
+    fragmentColor = texture(uTexture, vertexTextureCoordinate); // Sends texture to the GPU for rendering
+}
 );
 
 
@@ -212,14 +202,8 @@ int main(int argc, char* argv[])
 
     // Load texture (relative to project's directory)
     const char* texFilename = "../../resources/textures/graybrick.jpg";
-    if (!UCreateTexture(texFilename, gTextureIdSide))
-    {
-        cout << "Failed to load texture " << texFilename << endl;
-        return EXIT_FAILURE;
-    }
 
-    texFilename = "../../resources/textures/graybrick.jpg";
-    if (!UCreateTexture(texFilename, gTextureIdBase))
+    if (!UCreateTexture(texFilename, gTextureId))
     {
         cout << "Failed to load texture " << texFilename << endl;
         return EXIT_FAILURE;
@@ -227,9 +211,7 @@ int main(int argc, char* argv[])
     // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
     glUseProgram(gProgramId);
     // We set the texture as texture unit 0
-    glUniform1i(glGetUniformLocation(gProgramId, "uTextureSide"), 0);
-    // We set the texture as texture unit 1
-    glUniform1i(glGetUniformLocation(gProgramId, "uTextureBase"), 1);
+    glUniform1i(glGetUniformLocation(gProgramId, "uTexture"), 0);
 
     // Sets the background color of the window to black (it will be implicitely used by glClear)
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -256,10 +238,6 @@ int main(int argc, char* argv[])
 
     // Release mesh data
     UDestroyMesh(gMesh);
-
-    // Release texture
-    UDestroyTexture(gTextureIdSide);
-    UDestroyTexture(gTextureIdBase);
 
     // Release shader program
     UDestroyShaderProgram(gProgramId);
@@ -433,7 +411,7 @@ void URender()
     // 1. Scales the object by 2
     glm::mat4 scale = glm::scale(glm::vec3(2.0f, 2.0f, 2.0f));
     // 2. Rotates shape by 15 degrees in the x axis
-    glm::mat4 rotation = glm::rotate(10.0f, glm::vec3(5.0, 1.0f, 1.0f));
+    glm::mat4 rotation = glm::rotate(10.0f, glm::vec3(1.0, -1.0f, 1.0f));
     // 3. Place object at the origin
     glm::mat4 translation = glm::translate(glm::vec3(0.0f, 0.0f, 0.0f));
     // Model matrix: transformations are applied right-to-left order
@@ -464,22 +442,15 @@ void URender()
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-    GLuint multipleTexturesLoc = glGetUniformLocation(gProgramId, "multipleTextures");
-    glUniform1i(multipleTexturesLoc, gIsBaseOn);
-
-
     // Activate the VBOs contained within the mesh's VAO
     glBindVertexArray(gMesh.vao);
 
     // bind textures on corresponding texture units
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, gTextureIdSide);
-    // bind textures on corresponding texture units
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, gTextureIdBase);
+    glBindTexture(GL_TEXTURE_2D, gTextureId);
 
     // Draws the triangles
-    glDrawElements(GL_TRIANGLES, gMesh.nIndices, GL_UNSIGNED_SHORT, NULL); // 
+    glDrawElements(GL_TRIANGLES, gMesh.nIndices, GL_UNSIGNED_SHORT, NULL); // Draws the triangle
 
     // Deactivate the Vertex Array Object
     glBindVertexArray(0);
@@ -496,14 +467,19 @@ void UCreateMesh(GLMesh& mesh)
     // Position and Color data of pyramid
     //FIXME!: ADD TEXT LOCATIONS
     GLfloat verts[] = {
-        // Vertex Positions    // Colors (r,g,b,a)    //texture coordinates
-         0.0f,  0.5f, 0.0f,   1.0f, 0.5f, 0.0f, 1.0f,  0.5f, 0.5f, // V0 Top center vertex
-
-         0.5f, -0.5f, 0.5f,   0.0f, 1.0f, 0.5f, 1.0f,  1.0f, 0.0f, //x V1 Front Bottom-Right 
-        -0.5f, -0.5f, 0.5f,   0.5f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, //x V2 Front Bottom-Left
-
-         0.5f,  -0.5f, -0.5f,  1.0f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, // V3 Back bottom-right
-         -0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 1.0f, 1.0f,  1.0f, 0.0f // V4 Back bottom-left
+        // Vertex Positions    // Colors (RGBA)    //texture coordinates
+        // peek of pyramid
+         0.0f,  0.5f, 0.0f,   1.0f, 0.5f, 0.0f, 1.0f,  0.5f, 0.5f, // V0 Top: center vertex
+        // sides of pyramid
+         0.5f, -0.5f, 0.5f,   0.0f, 1.0f, 0.5f, 1.0f,  1.0f, 0.0f, // V1: Side: Front Bottom-Right 
+        -0.5f, -0.5f, 0.5f,   0.5f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, // V2 Side: Front Bottom-Left
+         0.5f,  -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, // V3 Side: Back bottom-right
+        // Base of pyramid. (Texture coordinates are different than sides)
+        -0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 1.0f, 1.0f,  1.0f, 0.0f, // V4 Side: Back bottom-left
+         0.5f, -0.5f, 0.5f,   0.0f, 1.0f, 0.5f, 1.0f,  1.0f, 1.0f, // V5 Base: Front-Right 
+        -0.5f, -0.5f, 0.5f,   0.5f, 0.0f, 1.0f, 1.0f,  0.0f, 1.0f, // V6 Base: Front-Left
+        0.5f,  -0.5f, -0.5f,  1.0f, 0.0f, 1.0f, 1.0f,  1.0f, 0.0f, // V7 Base: Back-right
+        -0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 1.0f, 1.0f,  0.0f, 0.0f  // V8 Base: Back-left
     };
 
     // Index data to share position data of pyramid
@@ -512,8 +488,8 @@ void UCreateMesh(GLMesh& mesh)
         0, 1, 3,  // Triangle 2 - right
         0, 3, 4,  // Triangle 3 - back
         0, 2, 4,  // Triangle 4 - left
-        1, 2, 4,  // Triangle 5 - bottom/front
-        1, 3, 4,   // Triangle 6 - bottom/back
+        7, 8, 5,  // Triangle 5 - bottom/front
+        5, 8, 6   // Triangle 6 - bottom/back
     };
 
     const GLuint floatsPerVertex = 3;
@@ -553,7 +529,7 @@ void UCreateMesh(GLMesh& mesh)
 void UDestroyMesh(GLMesh& mesh)
 {
     glDeleteVertexArrays(1, &mesh.vao);
-    glDeleteBuffers(2, mesh.vbos);
+    glDeleteBuffers(1, mesh.vbos);
 }
 
 
