@@ -48,7 +48,7 @@ namespace
     GLuint gTextureId;
 
     // camera
-    Camera gCamera(glm::vec3(0.3f, 5.6f, 9.9f));
+    Camera gCamera(glm::vec3(0.2f, 5.6f, 9.9f));
     float gLastX = WINDOW_WIDTH / 2.0f;
     float gLastY = WINDOW_HEIGHT / 2.0f;
     bool gFirstMouse = true;
@@ -411,9 +411,9 @@ void URender()
     // 1. Scales the object by 2
     glm::mat4 scale = glm::scale(glm::vec3(2.0f, 2.0f, 2.0f));
     // 2. Rotates shape by 15 degrees in the x axis
-    glm::mat4 rotation = glm::rotate(0.10f, glm::vec3(-0.1, 0.0f, 0.0f));
+    glm::mat4 rotation = glm::rotate(45.0f, glm::vec3(-0.5, 1.0f, 0.0f));
     // 3. Place object at the origin
-    glm::mat4 translation = glm::translate(glm::vec3(0.3f, 6.0f, -4.8f));
+    glm::mat4 translation = glm::translate(glm::vec3(0.3f, 6.0f, -9.8f));
     // Model matrix: transformations are applied right-to-left order
     glm::mat4 model = translation * rotation * scale;
 
