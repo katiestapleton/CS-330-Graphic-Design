@@ -27,7 +27,7 @@ namespace
     const char* const WINDOW_TITLE = "Katie'S Assignment"; // Macro for window title
 
     // Variables for window width and height
-    const int WINDOW_WIDTH =2000;
+    const int WINDOW_WIDTH = 2000;
     const int WINDOW_HEIGHT = 1800;
 
     // Stores the GL data relative to a given mesh
@@ -57,6 +57,16 @@ namespace
     float gDeltaTime = 0.0f; // time between current frame and last frame
     float gLastFrame = 0.0f;
 
+    // pyramid and light color
+    //m::vec3 gObjectColor(0.6f, 0.5f, 0.75f);
+    glm::vec3 gObjectColor(1.f, 0.2f, 0.0f);
+    glm::vec3 gLightColor(1.0f, 1.0f, 1.0f);
+
+    // Light position and scale
+    glm::vec3 gLightPosition(1.5f, 0.5f, 3.0f);
+    glm::vec3 gLightScale(0.3f);
+    glm::vec3 gCubePosition(0.0f, 0.0f, 0.0f);
+    glm::vec3 gCubeScale(2.0f);
 }
 
 /* User-defined Function prototypes to:
@@ -75,16 +85,22 @@ void UDestroyMesh(GLMesh& mesh);
 void URender();
 bool UCreateShaderProgram(const char* vtxShaderSource, const char* fragShaderSource, GLuint& programId);
 void UDestroyShaderProgram(GLuint programId);
+bool UCreateTexture(const char* filename, GLuint& textureId);
+void UDestroyTexture(GLuint textureId);
 
 
 /* Vertex Shader Source Code*/
 const GLchar* vertexShaderSource = GLSL(440,
     layout(location = 0) in vec3 position; // Vertex data from Vertex Attrib Pointer 0
-layout(location = 1) in vec4 color;  // Color data from Vertex Attrib Pointer 1
-layout(location = 2) in vec2 textureCoordinate; // texture data
+layout(location = 1) in vec3 normal; // VAP position 1 for normals    
+layout(location = 2) in vec4 color;  // Color data from Vertex Attrib Pointer 1
+layout(location = 3) in vec2 textureCoordinate; // texture data
 
+
+
+out vec3 vertexNormal; // For outgoing normals to fragment shader
+out vec3 vertexFragmentPos; // For outgoing color / pixels to fragment shader
 out vec4 vertexColor; // variable to transfer color data to the fragment shader
-
 out vec2 vertexTextureCoordinate;
 
 //Global variables for the  transform matrices
@@ -97,26 +113,81 @@ void main()
     gl_Position = projection * view * model * vec4(position, 1.0f); // transforms vertices to clip coordinates
     vertexColor = color; // references incoming color data
     vertexTextureCoordinate = textureCoordinate;
-}
-);
 
+    vertexFragmentPos = vec3(model * vec4(position, 1.0f)); // Gets fragment / pixel position in world space only (exclude view and projection)
+
+    vertexNormal = mat3(transpose(inverse(model))) * normal; // get normal vectors in world space only and exclude normal translation properties
+}
+    }
+    );
+
+/*
+// Fragment Shader Source Code
+const GLchar* fragmentShaderSource = GLSL(440,
+    in vec4 vertexColor; // Variable to hold incoming color data from vertex shader
+    in vec2 vertexTextureCoordinate;
+
+    out vec4 fragmentColor;
+
+    uniform sampler2D uTexture;
+
+    void main()
+    {
+        //fragmentColor = vec4(vertexColor);
+        fragmentColor = texture(uTexture, vertexTextureCoordinate); // Sends texture to the GPU for rendering
+    }
+);
+*/
 
 /* Fragment Shader Source Code*/
 const GLchar* fragmentShaderSource = GLSL(440,
     in vec4 vertexColor; // Variable to hold incoming color data from vertex shader
+in vec3 vertexNormal; // For incoming normals
+in vec3 vertexFragmentPos; // For incoming fragment position
 in vec2 vertexTextureCoordinate;
 
 out vec4 fragmentColor;
 
-uniform sampler2D uTexture;
+// Uniform / Global variables for object color, light color, light position, and camera/view position
+uniform vec3 objectColor;
+uniform vec3 lightColor;
+uniform vec3 lightPos;
+uniform vec3 viewPosition;
+uniform sampler2D uTexture; // Useful when working with multiple textures
+uniform vec2 uvScale;
 
 void main()
 {
-    //fragmentColor = vec4(vertexColor);
-    fragmentColor = texture(uTexture, vertexTextureCoordinate); // Sends texture to the GPU for rendering
+    /*Phong lighting model calculations to generate ambient, diffuse, and specular components*/
+
+    //Calculate Ambient lighting*/
+    float ambientStrength = 0.1f; // Set ambient or global lighting strength
+    vec3 ambient = ambientStrength * lightColor; // Generate ambient light color
+
+    //Calculate Diffuse lighting*/
+    vec3 norm = normalize(vertexNormal); // Normalize vectors to 1 unit
+    vec3 lightDirection = normalize(lightPos - vertexFragmentPos); // Calculate distance (light direction) between light source and fragments/pixels on cube
+    float impact = max(dot(norm, lightDirection), 0.0);// Calculate diffuse impact by generating dot product of normal and light
+    vec3 diffuse = impact * lightColor; // Generate diffuse light color
+
+    //Calculate Specular lighting*/
+    float specularIntensity = 0.8f; // Set specular light strength
+    float highlightSize = 16.0f; // Set specular highlight size
+    vec3 viewDir = normalize(viewPosition - vertexFragmentPos); // Calculate view direction
+    vec3 reflectDir = reflect(-lightDirection, norm);// Calculate reflection vector
+    //Calculate specular component
+    float specularComponent = pow(max(dot(viewDir, reflectDir), 0.0), highlightSize);
+    vec3 specular = specularIntensity * specularComponent * lightColor;
+
+    // Texture holds the color to be used for all three components
+    vec4 textureColor = texture(uTexture, vertexTextureCoordinate * uvScale);
+
+    // Calculate phong result
+    vec3 phong = (ambient + diffuse + specular) * textureColor.xyz;
+
+    fragmentColor = vec4(phong, 1.0); // Send lighting results to GPU
 }
 );
-
 
 
 // Images are loaded with Y axis going down, but OpenGL's Y axis goes up, so let's flip it
@@ -196,6 +267,7 @@ int main(int argc, char* argv[])
     // Create the mesh
     UCreateMesh(gMesh); // Calls the function to create the Vertex Buffer Object
 
+
     // Create the shader program
     if (!UCreateShaderProgram(vertexShaderSource, fragmentShaderSource, gProgramId))
         return EXIT_FAILURE;
@@ -238,6 +310,9 @@ int main(int argc, char* argv[])
 
     // Release mesh data
     UDestroyMesh(gMesh);
+
+    // Release texture
+    UDestroyTexture(gTextureId);
 
     // Release shader program
     UDestroyShaderProgram(gProgramId);
@@ -414,6 +489,7 @@ void URender()
     glm::mat4 rotation = glm::rotate(45.0f, glm::vec3(-0.5, 1.0f, 0.0f));
     // 3. Place object at the origin
     glm::mat4 translation = glm::translate(glm::vec3(0.3f, 6.0f, -9.8f));
+    // glm::mat4 model = glm::translate(gCubePosition) * glm::scale(gCubeScale);
     // Model matrix: transformations are applied right-to-left order
     glm::mat4 model = translation * rotation * scale;
 
@@ -442,6 +518,22 @@ void URender()
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
+    // Reference matrix uniforms from the Cube Shader program for the cub color, light color, light position, and camera position
+    GLint objectColorLoc = glGetUniformLocation(gCubeProgramId, "objectColor");
+    GLint lightColorLoc = glGetUniformLocation(gCubeProgramId, "lightColor");
+    GLint lightPositionLoc = glGetUniformLocation(gCubeProgramId, "lightPos");
+    GLint viewPositionLoc = glGetUniformLocation(gCubeProgramId, "viewPosition");
+
+    // Pass color, light, and camera data to the Cube Shader program's corresponding uniforms
+    glUniform3f(objectColorLoc, gObjectColor.r, gObjectColor.g, gObjectColor.b);
+    glUniform3f(lightColorLoc, gLightColor.r, gLightColor.g, gLightColor.b);
+    glUniform3f(lightPositionLoc, gLightPosition.x, gLightPosition.y, gLightPosition.z);
+    const glm::vec3 cameraPosition = gCamera.Position;
+    glUniform3f(viewPositionLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
+
+    GLint UVScaleLoc = glGetUniformLocation(gCubeProgramId, "uvScale");
+    glUniform2fv(UVScaleLoc, 1, glm::value_ptr(gUVScale));
+
     // Activate the VBOs contained within the mesh's VAO
     glBindVertexArray(gMesh.vao);
 
@@ -465,21 +557,20 @@ void UCreateMesh(GLMesh& mesh)
 {
     // Using indexed drawing- store only the unique vertices and then specify the order at which we want to draw these vertices in.
     // Position and Color data of pyramid
-    //FIXME!: ADD TEXT LOCATIONS
     GLfloat verts[] = {
-        // Vertex Positions    // Colors (RGBA)    //texture coordinates
+        // Vertex Positions    // normals // Colors (RGBA)    //texture coordinates
         // peek of pyramid
-         0.0f,  0.5f, 0.0f,   1.0f, 0.5f, 0.0f, 1.0f,  0.5f, 0.5f, // V0 Top: center vertex
+         0.0f,  0.5f,  0.0f,  0.1, 0.5, 0.9,  1.0f, 0.5f, 0.0f, 1.0f,  0.5f, 0.5f, // V0 Top: center vertex
         // sides of pyramid
-         0.5f, -0.5f, 0.5f,   0.0f, 1.0f, 0.5f, 1.0f,  1.0f, 0.0f, // V1: Side: Front Bottom-Right 
-        -0.5f, -0.5f, 0.5f,   0.5f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, // V2 Side: Front Bottom-Left
-         0.5f,  -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, // V3 Side: Back bottom-right
+         0.5f, -0.5f,  0.5f,  0.9, 0.1, 0.5,  0.0f, 1.0f, 0.5f, 1.0f,  1.0f, 0.0f, // V1: Side: Front Bottom-Right 
+        -0.5f, -0.5f,  0.5f,  0.5, 0.9, 0.1,  0.5f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, // V2 Side: Front Bottom-Left
+         0.5f, -0.5f, -0.5f,  0.1, 0.5, 0.9,  1.0f, 0.0f, 1.0f, 1.0f,  0.0f, 0.0f, // V3 Side: Back bottom-right
         // Base of pyramid. (Texture coordinates are different than sides)
-        -0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 1.0f, 1.0f,  1.0f, 0.0f, // V4 Side: Back bottom-left
-         0.5f, -0.5f, 0.5f,   0.0f, 1.0f, 0.5f, 1.0f,  1.0f, 1.0f, // V5 Base: Front-Right 
-        -0.5f, -0.5f, 0.5f,   0.5f, 0.0f, 1.0f, 1.0f,  0.0f, 1.0f, // V6 Base: Front-Left
-        0.5f,  -0.5f, -0.5f,  1.0f, 0.0f, 1.0f, 1.0f,  1.0f, 0.0f, // V7 Base: Back-right
-        -0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 1.0f, 1.0f,  0.0f, 0.0f  // V8 Base: Back-left
+        -0.5f, -0.5f, -0.5f,  0.6, 0.1, 0.5,  0.5f, 0.5f, 1.0f, 1.0f,  1.0f, 0.0f, // V4 Side: Back bottom-left
+         0.5f, -0.5f,  0.5f,  0.5, 0.6, 0.1,  0.0f, 1.0f, 0.5f, 1.0f,  1.0f, 1.0f, // V5 Base: Front-Right 
+        -0.5f, -0.5f,  0.5f,  0.1, 0.5, 0.6,  0.5f, 0.0f, 1.0f, 1.0f,  0.0f, 1.0f, // V6 Base: Front-Left
+         0.5f, -0.5f, -0.5f,  0.7, 0.1, 0.5,  1.0f, 0.0f, 1.0f, 1.0f,  1.0f, 0.0f, // V7 Base: Back-right
+        -0.5f, -0.5f, -0.5f,  0.5, 0.7, 0.1,  0.5f, 0.5f, 1.0f, 1.0f,  0.0f, 0.0f  // V8 Base: Back-left
     };
 
     // Index data to share position data of pyramid
@@ -493,6 +584,7 @@ void UCreateMesh(GLMesh& mesh)
     };
 
     const GLuint floatsPerVertex = 3;
+    const GLuint floatsPerNormal = 3;
     const GLuint floatsPerColor = 4;
     const GLuint floatsPerUV = 2;
 
@@ -509,20 +601,23 @@ void UCreateMesh(GLMesh& mesh)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // Strides between vertex coordinates is 6 (x, y, z, r, g, b, a). A tightly packed stride is 0.
-    GLint stride = sizeof(float) * (floatsPerVertex + floatsPerColor + floatsPerUV);// The number of floats before each
+    GLint stride = sizeof(float) * (floatsPerVertex + +floatsPerNormal + floatsPerColor + floatsPerUV);// The number of floats before each
 
     // POSITION
     // Create Vertex Attribute Pointers
     glVertexAttribPointer(0, floatsPerVertex, GL_FLOAT, GL_FALSE, stride, 0);
     glEnableVertexAttribArray(0);
 
-    // COLOR
-    glVertexAttribPointer(1, floatsPerColor, GL_FLOAT, GL_FALSE, stride, (char*)(sizeof(float) * floatsPerVertex));
+    glVertexAttribPointer(1, floatsPerUV, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float) * floatsPerVertex));
     glEnableVertexAttribArray(1);
 
-    // TEXTURE
-    glVertexAttribPointer(2, floatsPerUV, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float) * (floatsPerVertex + floatsPerColor)));
+    // COLOR
+    glVertexAttribPointer(2, floatsPerColor, GL_FLOAT, GL_FALSE, stride, (char*)(sizeof(float) * (floatsPerVertex + floatsPerNormal)));
     glEnableVertexAttribArray(2);
+
+    // TEXTURE
+    glVertexAttribPointer(3, floatsPerUV, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float) * (floatsPerVertex + floatsPerColor + floatsPerColor)));
+    glEnableVertexAttribArray(3);
 }
 
 
