@@ -66,19 +66,14 @@ namespace
     // object and light color
     glm::vec3 gObjectColor(0.6f, 0.5f, 0.75f);
     //glm::vec3 gObjectColor(1.0f, 0.2f, 0.0f);
-    glm::vec3 gLightColor(0.0f, 1.0f, 0.0f);
 
-    /*
-    // Subject position and scale
-    glm::vec3 gCubePosition(0.0f, 0.0f, 0.0f);
-    glm::vec3 gCubeScale(2.0f);
-    */
-
-    // Light position and scale
+    // lighting
     glm::vec3 gLightPosition(-1.5f, 6.5f, 4.6f);
+    glm::vec3 gLightColor(0.0f, 1.0f, 0.0f);
     glm::vec3 gLightScale(0.3f);
 
 }
+
 
 /* User-defined Function prototypes to:
  * initialize the program, set the window size,
@@ -101,25 +96,25 @@ void UDestroyShaderProgram(GLuint programId);
 /* Vertex Shader Source Code*/
 const GLchar* vertexShaderSource = GLSL(440,
     layout(location = 0) in vec3 position; // Vertex data from Vertex Attrib Pointer 0
-layout(location = 1) in vec3 normal;  // Color data from Vertex Attrib Pointer 1
-layout(location = 2) in vec2 textureCoordinate; // texture data
+    layout(location = 1) in vec3 normal;  // Color data from Vertex Attrib Pointer 1
+    layout(location = 2) in vec2 textureCoordinate; // texture data
 
-out vec3 vertexNormal; // For outgoing normals to fragment shade
-out vec3 vertexFragmentPos; // For outgoing color / pixels to fragment shader
-out vec2 vertexTextureCoordinate;
+    out vec3 vertexNormal; // For outgoing normals to fragment shade
+    out vec3 vertexFragmentPos; // For outgoing color / pixels to fragment shader
+    out vec2 vertexTextureCoordinate;
 
-//Global variables for the  transform matrices
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+    //Global variables for the  transform matrices
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 projection;
 
-void main()
-{
-    gl_Position = projection * view * model * vec4(position, 1.0f); // transforms vertices to clip coordinates
-    vertexFragmentPos = vec3(model * vec4(position, 1.0f)); // Gets fragment / pixel position in world space only (exclude view and projection)
-    vertexNormal = mat3(transpose(inverse(model))) * normal; // get normal vectors in world space only and exclude normal translation properties
-    vertexTextureCoordinate = textureCoordinate;
-}
+    void main()
+    {
+        gl_Position = projection * view * model * vec4(position, 1.0f); // transforms vertices to clip coordinates
+        vertexFragmentPos = vec3(model * vec4(position, 1.0f)); // Gets fragment / pixel position in world space only (exclude view and projection)
+        vertexNormal = mat3(transpose(inverse(model))) * normal; // get normal vectors in world space only and exclude normal translation properties
+        vertexTextureCoordinate = textureCoordinate;
+    }
 );
 
 
@@ -138,6 +133,7 @@ const GLchar* fragmentShaderSource = GLSL(440,
     uniform vec3 lightPos;
     uniform vec3 viewPosition;
     uniform vec2 uvScale;
+    uniform DirLight dirLight;
 
 void main()
 {
@@ -172,7 +168,6 @@ void main()
     fragmentColor = vec4(phong, 1.0f);
 }
 );
-
 
 
 // Images are loaded with Y axis going down, but OpenGL's Y axis goes up, so let's flip it
@@ -532,7 +527,6 @@ void UCreateMesh(GLMesh& mesh)
 {
     // Using indexed drawing- store only the unique vertices and then specify the order at which we want to draw these vertices in.
     // Position and Color data of pyramid
-    //FIXME!: ADD TEXT LOCATIONS
     GLfloat verts[] = {
         // Vertex Positions    // Normal            //texture coordinates
         // peek of pyramid
@@ -591,6 +585,7 @@ void UCreateMesh(GLMesh& mesh)
     // TEXTURE
     glVertexAttribPointer(2, floatsPerUV, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float) * (floatsPerVertex + floatsPerNormal)));
     glEnableVertexAttribArray(2);
+
 }
 
 
