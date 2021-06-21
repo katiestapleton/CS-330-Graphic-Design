@@ -63,15 +63,20 @@ namespace
     float gDeltaTime = 0.0f; // time between current frame and last frame
     float gLastFrame = 0.0f;
 
-    // object and light color
+    // object color
     glm::vec3 gObjectColor(0.6f, 0.5f, 0.75f);
     //glm::vec3 gObjectColor(1.0f, 0.2f, 0.0f);
 
-    // lighting
+    // key light
     glm::vec3 gLightPosition(-1.5f, 6.5f, 4.6f);
     glm::vec3 gLightColor(0.0f, 1.0f, 0.0f);
     glm::vec3 gLightScale(0.3f);
-
+    
+    // fill/spot light
+    glm::vec3 gLightPositionSpot(5.5f, 6.5f, 4.6f);
+    glm::vec3 gLightColorSpot(1.0f, 0.0f, 0.0f);
+    glm::vec3 gLightScaleSpot(0.3f);
+    
 }
 
 
@@ -131,12 +136,19 @@ const GLchar* fragmentShaderSource = GLSL(440,
     uniform vec3 objectColor;
     uniform vec3 lightColor;
     uniform vec3 lightPos;
+    //uniform vec3 lightColorSpot;
+    //uniform vec3 lightPosSpot;
     uniform vec3 viewPosition;
     uniform vec2 uvScale;
-    uniform DirLight dirLight;
 
 void main()
 {
+    // **** TEXTURE *****
+    //textureColor = texture(uTexture, vertexTextureCoordinate); // Sends texture to the GPU for rendering
+    vec4 textureColor = texture(uTexture, vertexTextureCoordinate * uvScale);
+
+
+    // ***** KEY LIGHT ******
     /*Phong lighting model calculations to generate ambient, diffuse, and specular components*/
 
    //Calculate Ambient lighting*/
@@ -157,15 +169,43 @@ void main()
     //Calculate specular component
     float specularComponent = pow(max(dot(viewDir, reflectDir), 0.0), highlightSize);
     vec3 specular = specularIntensity * specularComponent * lightColor;
-
-    //textureColor = texture(uTexture, vertexTextureCoordinate); // Sends texture to the GPU for rendering
-    vec4 textureColor = texture(uTexture, vertexTextureCoordinate * uvScale);
-
+    
+    // *** ORIGINAL (ONE LIGHT)
     // Calculate phong result
     //vec3 phong = (ambient + diffuse + specular) * objectColor;
-    vec3 phong = (ambient + diffuse + specular) * textureColor.xyz;
+    vec3 keyLight = (ambient + diffuse + specular) * textureColor.xyz;
+    vec3 keyLight2 = (ambient + diffuse + specular) * textureColor.xyz;
 
-    fragmentColor = vec4(phong, 1.0f);
+
+    // ****** FILL LIGHT ******
+    /*
+   //Calculate Ambient lighting
+    float ambientStrength = 0.1f; // Set ambient or global lighting strength
+    vec3 ambient = ambientStrength * lightColorSpot; // Generate ambient light color
+
+    //Calculate Diffuse lighting
+    vec3 norm = normalize(vertexNormal); // Normalize vectors to 1 unit
+    vec3 lightDirection = normalize(lightPosSpot - vertexFragmentPos); // Calculate distance (light direction) between light source and fragments/pixels on cube
+    float impact = max(dot(norm, lightDirection), 0.0);// Calculate diffuse impact by generating dot product of normal and light
+    vec3 diffuse = impact * lightColorSpot; // Generate diffuse light color
+
+    //Calculate Specular lighting
+    float specularIntensity = 0.8f; // Set specular light strength
+    float highlightSize = 16.0f; // Set specular highlight size
+    vec3 viewDir = normalize(viewPosition - vertexFragmentPos); // Calculate view direction
+    vec3 reflectDir = reflect(-lightDirection, norm);// Calculate reflection vector
+    //Calculate specular component
+    float specularComponent = pow(max(dot(viewDir, reflectDir), 0.0), highlightSize);
+    vec3 specular = specularIntensity * specularComponent * lightColorSpot;
+
+    // *** ORIGINAL (ONE LIGHT)
+    // Calculate phong result
+    vec3 fillLight = (ambient + diffuse + specular) * textureColor.xyz;
+
+    */
+    fragmentColor = vec4(keyLight, 1.0f);
+    //fragmentColor = vec4(keyLight, 1.0f) + vec4(keyLight2, 1.0f);
+    //fragmentColor = vec4(keyLight, 1.0f) + vec4(fillLight, 1.0f);
 }
 );
 
@@ -495,11 +535,15 @@ void URender()
     GLint objectColorLoc = glGetUniformLocation(gProgramId, "objectColor");
     GLint lightColorLoc = glGetUniformLocation(gProgramId, "lightColor");
     GLint lightPositionLoc = glGetUniformLocation(gProgramId, "lightPos");
+    //GLint lightColorLocSpot = glGetUniformLocation(gProgramId, "lightColorSpot");
+    //GLint lightPositionLocSpot = glGetUniformLocation(gProgramId, "lightPosSpot");
     GLint viewPositionLoc = glGetUniformLocation(gProgramId, "viewPosition");
 
     glUniform3f(objectColorLoc, gObjectColor.r, gObjectColor.g, gObjectColor.b);
     glUniform3f(lightColorLoc, gLightColor.r, gLightColor.g, gLightColor.b);
     glUniform3f(lightPositionLoc, gLightPosition.x, gLightPosition.y, gLightPosition.z);
+    //glUniform3f(lightColorLocSpot, gLightColorSpot.r, gLightColorSpot.g, gLightColorSpot.b);
+    //glUniform3f(lightPositionLocSpot, gLightPositionSpot.x, gLightPositionSpot.y, gLightPositionSpot.z);
     const glm::vec3 cameraPosition = gCamera.Position;
     glUniform3f(viewPositionLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
 
@@ -553,6 +597,15 @@ void UCreateMesh(GLMesh& mesh)
         7, 8, 5,  // Triangle 5 - bottom/front
         5, 8, 6   // Triangle 6 - bottom/back
     };
+
+    /* multi-light how-to
+    glm::vec3 pointLightPositions[] = {
+        glm::vec3(0.7f,  0.2f,  2.0f),
+        glm::vec3(2.3f, -3.3f, -4.0f),
+        //glm::vec3(-4.0f,  2.0f, -12.0f),
+        //glm::vec3(0.0f,  0.0f, -3.0f)
+    };
+    */
 
     const GLuint floatsPerVertex = 3;
     const GLuint floatsPerNormal = 3;
