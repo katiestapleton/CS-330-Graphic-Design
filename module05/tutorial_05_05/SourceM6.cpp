@@ -68,14 +68,14 @@ namespace
     //glm::vec3 gObjectColor(1.0f, 0.2f, 0.0f);
 
     // key light
-    glm::vec3 gLightPosition(-1.5f, 6.5f, 4.6f);
+    glm::vec3 gLightPosition(-4.5f, 6.5f, 4.6f);
     glm::vec3 gLightColor(0.0f, 1.0f, 0.0f);
-    glm::vec3 gLightScale(0.3f);
+    glm::vec3 gLightScale(5.0f);
     
     // fill/spot light
-    glm::vec3 gLightPositionSpot(1.5f, 6.5f, 4.6f);
+    glm::vec3 gLightPositionSpot(4.5f, 1.0f, -4.0f);
     glm::vec3 gLightColorSpot(1.0f, 0.0f, 0.0f);
-    glm::vec3 gLightScaleSpot(0.3f);
+    glm::vec3 gLightScaleSpot(4.0f);
     
 }
 
@@ -152,60 +152,56 @@ void main()
     /*Phong lighting model calculations to generate ambient, diffuse, and specular components*/
 
    //Calculate Ambient lighting*/
-    float ambientStrength = 0.1f; // Set ambient or global lighting strength
+    float ambientStrength = 0.0f; // Set ambient or global lighting strength
     vec3 ambient = ambientStrength * lightColor; // Generate ambient light color
 
     //Calculate Diffuse lighting*/
     vec3 norm = normalize(vertexNormal); // Normalize vectors to 1 unit
     vec3 lightDirection = normalize(lightPos - vertexFragmentPos); // Calculate distance (light direction) between light source and fragments/pixels on cube
-    float impact = max(dot(norm, lightDirection), 0.0);// Calculate diffuse impact by generating dot product of normal and light
+    float impact = max(dot(norm, lightDirection), 1.0);// Calculate diffuse impact by generating dot product of normal and light
     vec3 diffuse = impact * lightColor; // Generate diffuse light color
 
     //Calculate Specular lighting*/
-    float specularIntensity = 0.8f; // Set specular light strength
-    float highlightSize = 16.0f; // Set specular highlight size
+    float specularIntensity = 1.0f; // Set specular light strength
+    float highlightSize = 1.0f; // Set specular highlight size
     vec3 viewDir = normalize(viewPosition - vertexFragmentPos); // Calculate view direction
     vec3 reflectDir = reflect(-lightDirection, norm);// Calculate reflection vector
     //Calculate specular component
     float specularComponent = pow(max(dot(viewDir, reflectDir), 0.0), highlightSize);
     vec3 specular = specularIntensity * specularComponent * lightColor;
     
-    // *** ORIGINAL (ONE LIGHT)
-    // Calculate phong result
-    //vec3 phong = (ambient + diffuse + specular) * objectColor;
+    // Calculate result
     vec3 keyLight = (ambient + diffuse + specular) * textureColor.xyz;
-    vec3 keyLight2 = (ambient + diffuse + specular) * textureColor.xyz;
 
 
     // ****** FILL LIGHT ******
-    /*
-   //Calculate Ambient lighting
-    float ambientStrength = 0.1f; // Set ambient or global lighting strength
-    vec3 ambient = ambientStrength * lightColorSpot; // Generate ambient light color
-
+    //Calculate Ambient lighting
+    float ambientStrengthSpot = 0.2f; // Set ambient or global lighting strength
+    vec3 ambientSpot = ambientStrengthSpot * lightColorSpot; // Generate ambient light color
+    
     //Calculate Diffuse lighting
-    vec3 norm = normalize(vertexNormal); // Normalize vectors to 1 unit
-    vec3 lightDirection = normalize(lightPosSpot - vertexFragmentPos); // Calculate distance (light direction) between light source and fragments/pixels on cube
-    float impact = max(dot(norm, lightDirection), 0.0);// Calculate diffuse impact by generating dot product of normal and light
-    vec3 diffuse = impact * lightColorSpot; // Generate diffuse light color
-
+    norm = normalize(vertexNormal); // Normalize vectors to 1 unit
+    lightDirection = normalize(lightPosSpot - vertexFragmentPos); // Calculate distance (light direction) between light source and fragments/pixels on cube
+    impact = max(dot(norm, lightDirection), 0.0);// Calculate diffuse impact by generating dot product of normal and light
+    vec3 diffuseSpot = impact * lightColorSpot; // Generate diffuse light color
+    
     //Calculate Specular lighting
-    float specularIntensity = 0.8f; // Set specular light strength
-    float highlightSize = 16.0f; // Set specular highlight size
-    vec3 viewDir = normalize(viewPosition - vertexFragmentPos); // Calculate view direction
-    vec3 reflectDir = reflect(-lightDirection, norm);// Calculate reflection vector
+    float specularIntensitySpot = 0.0f; // Set specular light strength
+    highlightSize = 1.0f; // Set specular highlight size
+    viewDir = normalize(viewPosition - vertexFragmentPos); // Calculate view direction
+    reflectDir = reflect(-lightDirection, norm);// Calculate reflection vector
     //Calculate specular component
-    float specularComponent = pow(max(dot(viewDir, reflectDir), 0.0), highlightSize);
-    vec3 specular = specularIntensity * specularComponent * lightColorSpot;
-
+    specularComponent = pow(max(dot(viewDir, reflectDir), 0.0), highlightSize);
+    vec3 specularSpot = specularIntensitySpot * specularComponent * lightColorSpot;
+    
     // *** ORIGINAL (ONE LIGHT)
-    // Calculate phong result
-    vec3 fillLight = (ambient + diffuse + specular) * textureColor.xyz;
+    //vec3 fillLight = (ambient + diffuse + specular) * textureColor.xyz;
+    vec3 fillLight = (ambientSpot + diffuseSpot + specularSpot) * textureColor.xyz;
+    
+    //vec3 lightfrag = (ambientSpot + diffuse + specular) * textureColor.xyz;
+    //fragmentColor = vec4(lightFrag, 1.0f);
 
-    */
-    fragmentColor = vec4(keyLight, 1.0f);
-    //fragmentColor = vec4(keyLight, 1.0f) + vec4(keyLight2, 1.0f);
-    //fragmentColor = vec4(keyLight, 1.0f) + vec4(fillLight, 1.0f);
+    fragmentColor = vec4(keyLight, 1.0f) + vec4(fillLight, 1.0f);
 }
 );
 
