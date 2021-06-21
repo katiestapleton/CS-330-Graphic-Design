@@ -47,10 +47,9 @@ namespace
     GLuint gProgramId;
     GLuint gCubeProgramId;
     GLuint gLampProgramId;
-    //texture
+    // Texture id
     GLuint gTextureId;
     glm::vec2 gUVScale(5.0f, 5.0f);
-    GLint gTexWrapMode = GL_REPEAT;
 
 
     // camera
@@ -64,8 +63,8 @@ namespace
     float gLastFrame = 0.0f;
 
     // object and light color
-    glm::vec3 gObjectColor(0.6f, 0.5f, 0.75f);
-    //glm::vec3 gObjectColor(1.0f, 0.2f, 0.0f);
+    //m::vec3 gObjectColor(0.6f, 0.5f, 0.75f);
+    glm::vec3 gObjectColor(1.0f, 0.2f, 0.0f);
     glm::vec3 gLightColor(0.0f, 1.0f, 0.0f);
 
     /*
@@ -126,18 +125,17 @@ void main()
 /* Fragment Shader Source Code*/
 const GLchar* fragmentShaderSource = GLSL(440,
     in vec3 vertexFragmentPos; // For incoming fragment position
-    in vec3 vertexNormal; // For incoming normals
-    in vec2 vertexTextureCoordinate;
+in vec3 vertexNormal; // For incoming normals
+in vec2 vertexTextureCoordinate;
 
-    out vec4 fragmentColor;
-    //out vec4 textureColor;
+out vec4 fragmentColor;
+out vec4 textureColor;
 
-    uniform sampler2D uTexture;
-    uniform vec3 objectColor;
-    uniform vec3 lightColor;
-    uniform vec3 lightPos;
-    uniform vec3 viewPosition;
-    uniform vec2 uvScale;
+uniform sampler2D uTexture;
+uniform vec3 objectColor;
+uniform vec3 lightColor;
+uniform vec3 lightPos;
+uniform vec3 viewPosition;
 
 void main()
 {
@@ -162,14 +160,12 @@ void main()
     float specularComponent = pow(max(dot(viewDir, reflectDir), 0.0), highlightSize);
     vec3 specular = specularIntensity * specularComponent * lightColor;
 
-    //textureColor = texture(uTexture, vertexTextureCoordinate); // Sends texture to the GPU for rendering
-    vec4 textureColor = texture(uTexture, vertexTextureCoordinate * uvScale);
-
     // Calculate phong result
     vec3 phong = (ambient + diffuse + specular) * objectColor;
-    // vec3 phong = (ambient + diffuse + specular) * textureColor.xyz;
 
     fragmentColor = vec4(phong, 1.0f);
+
+    textureColor = texture(uTexture, vertexTextureCoordinate); // Sends texture to the GPU for rendering
 }
 );
 
@@ -508,9 +504,6 @@ void URender()
     const glm::vec3 cameraPosition = gCamera.Position;
     glUniform3f(viewPositionLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
 
-    GLint UVScaleLoc = glGetUniformLocation(gProgramId, "uvScale");
-    glUniform2fv(UVScaleLoc, 1, glm::value_ptr(gUVScale));
-
     // bind textures on corresponding texture units
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, gTextureId);
@@ -542,7 +535,7 @@ void UCreateMesh(GLMesh& mesh)
         -0.5f, -0.5f,  0.5f,  -1.0f, -1.0f,  1.0f,  0.0f, 0.0f, // V2 Side: Front Bottom-Left
          0.5f, -0.5f, -0.5f,  -1.0f, -1.0f, -1.0f,  0.0f, 0.0f, // V3 Side: Back bottom-right
         -0.5f, -0.5f, -0.5f,  -1.0f, -1.0f, -1.0f,  1.0f, 0.0f, // V4 Side: Back bottom-left
-
+     
         // Base of pyramid. (Texture coordinates are different than sides)
          0.5f, -0.5f,  0.5f,  -1.0f, -1.0f,  1.0f,  1.0f, 1.0f, // V5 Base: Front-Right 
         -0.5f, -0.5f,  0.5f,  -1.0f, -1.0f,  1.0f,  0.0f, 1.0f, // V6 Base: Front-Left
@@ -589,7 +582,7 @@ void UCreateMesh(GLMesh& mesh)
     glEnableVertexAttribArray(1);
 
     // TEXTURE
-    glVertexAttribPointer(2, floatsPerUV, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float) * (floatsPerVertex + floatsPerNormal)));
+    glVertexAttribPointer(2, floatsPerUV, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float) * (floatsPerVertex + +floatsPerNormal)));
     glEnableVertexAttribArray(2);
 }
 

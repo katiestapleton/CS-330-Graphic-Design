@@ -693,7 +693,7 @@ void UDestroyMesh(GLMesh &mesh)
 bool UCreateTexture(const char* filename, GLuint &textureId)
 {
     int width, height, channels;
-    unsigned char *image = stbi_load(filename, &width, &height, &channels, 0);
+    unsigned char* image = stbi_load(filename, &width, &height, &channels, 0);
     if (image)
     {
         flipImageVertically(image, width, height, channels);
@@ -709,16 +709,16 @@ bool UCreateTexture(const char* filename, GLuint &textureId)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         if (channels == 3)
-        	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
         else if (channels == 4)
-        	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
         else
         {
-        	cout << "Not implemented to handle image with " << channels << " channels" << endl;
-        	return false;
+            cout << "Not implemented to handle image with " << channels << " channels" << endl;
+            return false;
         }
 
-		glGenerateMipmap(GL_TEXTURE_2D);
+        glGenerateMipmap(GL_TEXTURE_2D);
 
         stbi_image_free(image);
         glBindTexture(GL_TEXTURE_2D, 0); // Unbind the texture
