@@ -166,8 +166,8 @@ void main()
     vec4 textureColor = texture(uTexture, vertexTextureCoordinate * uvScale);
 
     // Calculate phong result
-    vec3 phong = (ambient + diffuse + specular) * objectColor;
-    // vec3 phong = (ambient + diffuse + specular) * textureColor.xyz;
+    //vec3 phong = (ambient + diffuse + specular) * objectColor;
+    vec3 phong = (ambient + diffuse + specular) * textureColor.xyz;
 
     fragmentColor = vec4(phong, 1.0f);
 }
