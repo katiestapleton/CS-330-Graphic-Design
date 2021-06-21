@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\module05\tutorial_05_05\SourceM6.cpp">
+    <ClCompile Include="Mod6Assignment.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
