@@ -73,7 +73,7 @@ namespace
     glm::vec3 gLightScale(0.3f);
     
     // fill/spot light
-    glm::vec3 gLightPositionSpot(5.5f, 6.5f, 4.6f);
+    glm::vec3 gLightPositionSpot(1.5f, 6.5f, 4.6f);
     glm::vec3 gLightColorSpot(1.0f, 0.0f, 0.0f);
     glm::vec3 gLightScaleSpot(0.3f);
     
@@ -136,8 +136,8 @@ const GLchar* fragmentShaderSource = GLSL(440,
     uniform vec3 objectColor;
     uniform vec3 lightColor;
     uniform vec3 lightPos;
-    //uniform vec3 lightColorSpot;
-    //uniform vec3 lightPosSpot;
+    uniform vec3 lightColorSpot;
+    uniform vec3 lightPosSpot;
     uniform vec3 viewPosition;
     uniform vec2 uvScale;
 
@@ -535,15 +535,15 @@ void URender()
     GLint objectColorLoc = glGetUniformLocation(gProgramId, "objectColor");
     GLint lightColorLoc = glGetUniformLocation(gProgramId, "lightColor");
     GLint lightPositionLoc = glGetUniformLocation(gProgramId, "lightPos");
-    //GLint lightColorLocSpot = glGetUniformLocation(gProgramId, "lightColorSpot");
-    //GLint lightPositionLocSpot = glGetUniformLocation(gProgramId, "lightPosSpot");
+    GLint lightColorLocSpot = glGetUniformLocation(gProgramId, "lightColorSpot");
+    GLint lightPositionLocSpot = glGetUniformLocation(gProgramId, "lightPosSpot");
     GLint viewPositionLoc = glGetUniformLocation(gProgramId, "viewPosition");
 
     glUniform3f(objectColorLoc, gObjectColor.r, gObjectColor.g, gObjectColor.b);
     glUniform3f(lightColorLoc, gLightColor.r, gLightColor.g, gLightColor.b);
     glUniform3f(lightPositionLoc, gLightPosition.x, gLightPosition.y, gLightPosition.z);
-    //glUniform3f(lightColorLocSpot, gLightColorSpot.r, gLightColorSpot.g, gLightColorSpot.b);
-    //glUniform3f(lightPositionLocSpot, gLightPositionSpot.x, gLightPositionSpot.y, gLightPositionSpot.z);
+    glUniform3f(lightColorLocSpot, gLightColorSpot.r, gLightColorSpot.g, gLightColorSpot.b);
+    glUniform3f(lightPositionLocSpot, gLightPositionSpot.x, gLightPositionSpot.y, gLightPositionSpot.z);
     const glm::vec3 cameraPosition = gCamera.Position;
     glUniform3f(viewPositionLoc, cameraPosition.x, cameraPosition.y, cameraPosition.z);
 
