@@ -1570,11 +1570,10 @@ void drawHouseWall(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID,
 
 void drawHouseDoor(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName)
 {
-    glm::mat4 scale = glm::scale(glm::vec3(1.0f, 1.0f, 1.0f));
-    glm::mat4 rotation = glm::rotate(0.0f, glm::vec3(0.5f, 0.1f, 0.0f));
-    glm::mat4 translation = glm::translate(glm::vec3(5.0f, 0.0f, 0.1f));
-    glm::vec2 gUVScale(5.0f, 5.0f);
-
+    glm::mat4 scale = glm::scale(glm::vec3(20.0f, 0.2f, 20.0f));
+    glm::mat4 rotation = glm::rotate(0.0f, glm::vec3(0.0f, 0.1f, 0.0f));
+    glm::mat4 translation = glm::translate(glm::vec3(0.0f, 0.0f, 10.0f));
+    glm::vec2 gUVScale(8.0f, 5.00f);
 
     // Model matrix: transformations are applied right-to-left order
     glm::mat4 model = translation * rotation * scale;
@@ -1608,9 +1607,49 @@ void drawHouseDoor(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID,
 void drawPainting(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName)
 {
     glm::mat4 scale = glm::scale(glm::vec3(1.0f, 1.0f, 1.0f));
+    glm::mat4 scale = glm::scale(glm::vec3(20.0f, 15.0f, -0.1f));
     glm::mat4 rotation = glm::rotate(0.0f, glm::vec3(0.5f, 0.1f, 0.0f));
-    glm::mat4 translation = glm::translate(glm::vec3(2.0f, 5.0f, 0.1f));
-    glm::vec2 gUVScale(5.0f, 5.0f);
+    glm::mat4 translation = glm::translate(glm::vec3(0.0f, 0.0f, 0.0f));
+    glm::vec2 gUVScale(30.0f, 20.0f);
+
+
+    // Model matrix: transformations are applied right-to-left order
+    glm::mat4 model = translation * rotation * scale;
+
+    // Set the shader to be used
+    glUseProgram(shaderProgramID);
+
+    // Retrieves and passes transform matrices to the Shader program
+    GLint modelLoc = glGetUniformLocation(shaderProgramID, "model");
+    GLint viewLoc = glGetUniformLocation(shaderProgramID, "view");
+    GLint projLoc = glGetUniformLocation(shaderProgramID, "projection");
+
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+    GLint UVScaleLoc = glGetUniformLocation(shaderProgramID, "uvScaleHouseWall");
+    glUniform2fv(UVScaleLoc, 1, glm::value_ptr(gUVScale));
+
+    // bind textures on corresponding texture units
+    glActiveTexture(textureNum); // 15
+    glBindTexture(GL_TEXTURE_2D, textureName);
+
+    // Activate the VBOs contained within the mesh's VA
+    glBindVertexArray(gMesh.vao);
+
+    // Draws the triangles
+    glDrawArrays(GL_TRIANGLES, 0, gMesh.nVertices);
+}
+
+
+
+void drawPainting(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName)
+{
+    glm::mat4 scale = glm::scale(glm::vec3(1.0f, 1.0f, 0.1f));
+    glm::mat4 rotation = glm::rotate(0.0f, glm::vec3(0.5f, 0.1f, 0.0f));
+    glm::mat4 translation = glm::translate(glm::vec3(0.0f, 0.0f, 0.0f));
+    glm::vec2 gUVScale(30.0f, 20.0f);
 
 
     // Model matrix: transformations are applied right-to-left order
@@ -1640,6 +1679,11 @@ void drawPainting(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, 
 
     // Draws the triangles
     glDrawArrays(GL_TRIANGLES, 0, gMesh.nVertices);
+}
+
+void drawHouseDoor(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName)
+{
+
 }
 
 
