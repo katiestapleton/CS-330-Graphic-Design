@@ -221,29 +221,27 @@ void destroyMesh(GLMesh& gMesh);
 
 void createMeshHouseFloor(GLMesh& gMesh);
 void createMeshHouseWall(GLMesh& gMesh);
+void createMeshHouseDoor(GLMesh& gMesh);
+void createMeshPainting(GLMesh& gMesh);
 void createMeshSideTables(GLMesh& gMesh);
 void createMeshSideTableDrawer(GLMesh& gMesh);
 void createMeshCoffeeTable(GLMesh& gMesh);
 void createMeshBalloons(GLMesh& gMesh);
 void createMeshWreath(GLMesh& gMesh);
-void createMeshSideDresser(GLMesh& gMesh);
-void createMeshHouseDoor(GLMesh& gMesh);
-void createMeshPainting(GLMesh& gMesh);
 void createMeshCouch(GLMesh& gMesh);
 void createMesh(GLMesh& gMesh);
 
 // draw
 void drawHouseFloor(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
 void drawHouseWall(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
+void drawHouseDoor(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
+void drawPainting(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
 void drawSideTables(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
 void drawSideTableDrawer(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
 void drawCoffeeTable(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
 void drawBalloons(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
 void drawWreath(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
-void drawSideDresser(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
-void drawDoor(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
 void drawCouch(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
-
 void DrawLight(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
 void DrawCube(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName);
 
@@ -347,7 +345,6 @@ const GLchar* SideTableFragShaderSource = GLSL(440,
         // https://open.gl/textures
         //vec4 fragTexRusticWood = texture(texRusticWood, vertexTextureCoordinate);
         vec4 fragTexRusticWood = texture(texRusticWood, vertexTextureCoordinate * uvScaleSideDresser);
-        //vec4 fragTexRusticWoodLegs = texture(texRusticWood, vertexTextureCoordinate);
         vec4 fragTexRusticWoodLegs = texture(texRusticWood, vertexTextureCoordinate * uvScaleDresserLegs);
 
         if (fragTexRusticWood.a < 0.1)
@@ -365,12 +362,12 @@ const GLchar* SideTableDrawerFragShaderSource = GLSL(440,
     in vec2 vertexTextureCoordinate;
 
     out vec4 fragmentColor; // For outgoing gSideTableDrawer color (smaller cube) to the GPU
-    uniform sampler2D uTexSideTableDrawer;
+    uniform sampler2D texSideTableDrawer;
     uniform vec2 uvScaleSideTableDrawer;
 
 void main()
 {
-    vec4 fragTex = texture(uTexSideTableDrawer, vertexTextureCoordinate * uvScaleSideTableDrawer);
+    vec4 fragTex = texture(texSideTableDrawer, vertexTextureCoordinate * uvScaleSideTableDrawer);
     if (fragTex.a < 0.1)
         discard;
     fragmentColor = fragTex;
@@ -421,12 +418,12 @@ const GLchar* HouseDoorFragShaderSource = GLSL(440,
     in vec2 vertexTextureCoordinate;
 
     out vec4 fragmentColor; // For outgoing gSideTableDrawer color (smaller cube) to the GPU
-    uniform sampler2D uTexHouseDoor;
+    uniform sampler2D texHouseDoor;
     uniform vec2 gUVScaleHouseDoor;
 
 void main()
 {
-    vec4 fragTex = texture(uTexHouseDoor, vertexTextureCoordinate * gUVScaleHouseDoor);
+    vec4 fragTex = texture(texHouseDoor, vertexTextureCoordinate * gUVScaleHouseDoor);
     if (fragTex.a < 0.1)
         discard;
     fragmentColor = fragTex;
@@ -439,12 +436,12 @@ const GLchar* PaintingFragShaderSource = GLSL(440,
     in vec2 vertexTextureCoordinate;
 
     out vec4 fragmentColor; // For outgoing gSideTableDrawer color (smaller cube) to the GPU
-    uniform sampler2D uTexPainting;
+    uniform sampler2D texPainting;
     uniform vec2 gUVScalePainting;
 
 void main()
 {
-    vec4 fragTex = texture(uTexPainting, vertexTextureCoordinate * gUVScalePainting);
+    vec4 fragTex = texture(texPainting, vertexTextureCoordinate * gUVScalePainting);
     if (fragTex.a < 0.1)
         discard;
     fragmentColor = fragTex;
@@ -510,12 +507,10 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     
     if (!createShaderProgram(vertexShaderSource, HouseDoorFragShaderSource, gHouseDoorProgramId))
-        cout << "whatsuppppp DOOR" << endl;
-        //return EXIT_FAILURE;
+        return EXIT_FAILURE;
     
     if (!createShaderProgram(vertexShaderSource, PaintingFragShaderSource, gPaintingProgramId))
-        cout << "whatsuppppp PAINT" << endl;
-        //return EXIT_FAILURE;
+        return EXIT_FAILURE;
      
 
     /*if (!createShaderProgram(vertexShaderSource, FragShaderSource, g_ProgramId))
@@ -555,7 +550,7 @@ int main(int argc, char* argv[])
     }
     // use: side tables drawers
     glUseProgram(gSideTableDrawerProgramId);
-    glUniform1i(glGetUniformLocation(gSideTableDrawerProgramId, "uTexSideTableDrawer"), 2);
+    glUniform1i(glGetUniformLocation(gSideTableDrawerProgramId, "texSideTableDrawer"), 2);
 
 
     // TEXTURE: wood (herring pattern)/dark
@@ -581,30 +576,30 @@ int main(int argc, char* argv[])
     glUseProgram(gHouseWallProgramId);
     glUniform1i(glGetUniformLocation(gHouseWallProgramId, "texHouseWall"), 4);
 
-    /*
+    
     // TEXTURE: classic front door image
     texFilename = "../../resources/images/door-dark-wood.png";
-    if (!createTexture(texFilename, texWallpaper, GL_CLAMP_TO_BORDER, GL_LINEAR))
+    if (!createTexture(texFilename, texHouseDoor, GL_REPEAT, GL_LINEAR))
     {
         cout << "Failed to load texture " << texFilename << endl;
-
+        //return EXIT_FAILURE;
     }
     // texture use: front door
     glUseProgram(gHouseDoorProgramId);
     glUniform1i(glGetUniformLocation(gHouseDoorProgramId, "texHouseDoor"), 5);
-    */
-    /*
+    
+    
     // TEXTURE: wood framed painting of sunset
-    texFilename = "../../resources/images/framed-sun-set-sml.png";
-    if (!createTexture(texFilename, texWallpaper, GL_CLAMP_TO_BORDER, GL_LINEAR))
+    texFilename = "../../resources/images/framed-sunset-lrg.png";
+    if (!createTexture(texFilename, texPainting, GL_REPEAT, GL_LINEAR))
     {
         cout << "Failed to load texture " << texFilename << endl;
-
+        //return EXIT_FAILURE;
     }
     // texture use: sunset painting on wall
     glUseProgram(gPaintingProgramId);
     glUniform1i(glGetUniformLocation(gPaintingProgramId, "texPainting"), 6);
-    */
+    
 
     // render loop. 
     // (exit key is esc, defined at "exit" (at end of main class)
@@ -635,8 +630,8 @@ int main(int argc, char* argv[])
     destroyMesh(gMeshSideTableDrawer);
     destroyMesh(gMeshHouseFloor);
     destroyMesh(gMeshHouseWall);
-    //destroyMesh(gMeshHouseDoor);
-    //destroyMesh(gMeshPainting);
+    destroyMesh(gMeshHouseDoor);
+    destroyMesh(gMeshPainting);
 
     // release texture
     //     // TODO: look into batch release destroy/release. 
@@ -646,8 +641,8 @@ int main(int argc, char* argv[])
     destroyTexture(texSideTableDrawer);
     destroyTexture(texWoodHerring);
     destroyTexture(texWallpaper);
-    //destroyTexture(texHouseDoor);
-    //destroyTexture(texPainting);
+    destroyTexture(texHouseDoor);
+    destroyTexture(texPainting);
 
     // release fragment shader programs
     destroyShaderProgram(gCubeProgramId);
@@ -655,8 +650,8 @@ int main(int argc, char* argv[])
     destroyShaderProgram(gSideTableDrawerProgramId);
     destroyShaderProgram(gHouseFloorProgramId);
     destroyShaderProgram(gHouseWallProgramId);
-    //destroyShaderProgram(gHouseDoorProgramId;
-    //destroyShaderProgram(gPaintingProgramId);
+    destroyShaderProgram(gHouseDoorProgramId);
+    destroyShaderProgram(gPaintingProgramId);
 
     exit(EXIT_SUCCESS); // Terminates the program successfully
 }
@@ -924,8 +919,8 @@ void rendering()
     drawSideTables(view, projection, gSideTableProgramId, gMeshSideTable, GL_TEXTURE1, texRusticWood);
     drawSideTableDrawer(view, projection, gSideTableDrawerProgramId, gMeshSideTableDrawer, GL_TEXTURE2, texSideTableDrawer);
     drawHouseWall(view, projection, gHouseWallProgramId, gMeshHouseWall, GL_TEXTURE4, texWallpaper);
-    //drawHouseDoor(view, projection, gHouseWallProgramId, gMeshHouseDoor, GL_TEXTURE5, texHouseDoor);
-    //drawPainting(view, projection, gHouseWallProgramId, gMeshPainting, GL_TEXTURE6, texPainting);
+    drawHouseDoor(view, projection, gHouseDoorProgramId, gMeshHouseDoor, GL_TEXTURE5, texHouseDoor);
+    drawPainting(view, projection, gPaintingProgramId, gMeshPainting, GL_TEXTURE6, texPainting);
 
     // Deactivate the Vertex Array Object and shader program
     glBindVertexArray(0);
@@ -1374,10 +1369,10 @@ void createMeshPainting(GLMesh& gMesh)
         // place at front of side table dresser cube
         -0.55f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, // left bottom
          0.55f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // right bottom
-         0.55f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // right top
-         0.55f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // right top
-        -0.55f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // left top
-        -0.55f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f  // left bottom
+         0.55f,  0.5f,  1.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // right top
+         1.55f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // right top
+        -1.55f,  1.5f,  -1.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // left top
+        -0.55f, -1.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f  // left bottom
     };
 
     const GLuint floatsPerVertex = 3;
@@ -1415,12 +1410,12 @@ void createMeshHouseDoor(GLMesh& gMesh)
     GLfloat verts[] = {
         // Vertex Positions    // normals  // textures
         // place at front of side table dresser cube
-        -0.55f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, // left bottom
-         0.55f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // right bottom
+        -0.55f, -0.5f,  1.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, // left bottom
+         0.55f, -2.5f,  1.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // right bottom
+         1.55f,  1.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // right top
          0.55f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // right top
-         0.55f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // right top
-        -0.55f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // left top
-        -0.55f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f  // left bottom
+        -2.55f,  2.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // left top
+        -1.55f, -0.5f,  -1.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f  // left bottom
     };
 
     const GLuint floatsPerVertex = 3;
@@ -1570,9 +1565,9 @@ void drawHouseWall(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID,
 
 void drawHouseDoor(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName)
 {
-    glm::mat4 scale = glm::scale(glm::vec3(20.0f, 0.2f, 20.0f));
-    glm::mat4 rotation = glm::rotate(0.0f, glm::vec3(0.0f, 0.1f, 0.0f));
-    glm::mat4 translation = glm::translate(glm::vec3(0.0f, 0.0f, 10.0f));
+    glm::mat4 scale = glm::scale(glm::vec3(5.0f, 5.2f, 5.0f));
+    glm::mat4 rotation = glm::rotate(10.0f, glm::vec3(1.0f, 0.2f, 0.0f));
+    glm::mat4 translation = glm::translate(glm::vec3(1.0f, 1.5f, 2.0f));
     glm::vec2 gUVScale(8.0f, 5.00f);
 
     // Model matrix: transformations are applied right-to-left order
@@ -1606,11 +1601,11 @@ void drawHouseDoor(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID,
 
 void drawPainting(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName)
 {
-    glm::mat4 scale = glm::scale(glm::vec3(1.0f, 1.0f, 1.0f));
-    glm::mat4 scale = glm::scale(glm::vec3(20.0f, 15.0f, -0.1f));
-    glm::mat4 rotation = glm::rotate(0.0f, glm::vec3(0.5f, 0.1f, 0.0f));
-    glm::mat4 translation = glm::translate(glm::vec3(0.0f, 0.0f, 0.0f));
-    glm::vec2 gUVScale(30.0f, 20.0f);
+
+    glm::mat4 scale = glm::scale(glm::vec3(3.0f, 2.0f, 4.0f));
+    glm::mat4 rotation = glm::rotate(15.0f, glm::vec3(1.5f, 1.1f, 0.0f));
+    glm::mat4 translation = glm::translate(glm::vec3(1.0f, 1.0f, 0.52f));
+    glm::vec2 gUVScale(5.0f, 2.0f);
 
 
     // Model matrix: transformations are applied right-to-left order
@@ -1628,7 +1623,7 @@ void drawPainting(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, 
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-    GLint UVScaleLoc = glGetUniformLocation(shaderProgramID, "uvScaleHouseWall");
+    GLint UVScaleLoc = glGetUniformLocation(shaderProgramID, "uvScaleHousePainting");
     glUniform2fv(UVScaleLoc, 1, glm::value_ptr(gUVScale));
 
     // bind textures on corresponding texture units
@@ -1640,50 +1635,6 @@ void drawPainting(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, 
 
     // Draws the triangles
     glDrawArrays(GL_TRIANGLES, 0, gMesh.nVertices);
-}
-
-
-
-void drawPainting(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName)
-{
-    glm::mat4 scale = glm::scale(glm::vec3(1.0f, 1.0f, 0.1f));
-    glm::mat4 rotation = glm::rotate(0.0f, glm::vec3(0.5f, 0.1f, 0.0f));
-    glm::mat4 translation = glm::translate(glm::vec3(0.0f, 0.0f, 0.0f));
-    glm::vec2 gUVScale(30.0f, 20.0f);
-
-
-    // Model matrix: transformations are applied right-to-left order
-    glm::mat4 model = translation * rotation * scale;
-
-    // Set the shader to be used
-    glUseProgram(shaderProgramID);
-
-    // Retrieves and passes transform matrices to the Shader program
-    GLint modelLoc = glGetUniformLocation(shaderProgramID, "model");
-    GLint viewLoc = glGetUniformLocation(shaderProgramID, "view");
-    GLint projLoc = glGetUniformLocation(shaderProgramID, "projection");
-
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-    GLint UVScaleLoc = glGetUniformLocation(shaderProgramID, "uvScalePainting");
-    glUniform2fv(UVScaleLoc, 1, glm::value_ptr(gUVScale));
-
-    // bind textures on corresponding texture units
-    glActiveTexture(textureNum); // 15
-    glBindTexture(GL_TEXTURE_2D, textureName);
-
-    // Activate the VBOs contained within the mesh's VA
-    glBindVertexArray(gMesh.vao);
-
-    // Draws the triangles
-    glDrawArrays(GL_TRIANGLES, 0, gMesh.nVertices);
-}
-
-void drawHouseDoor(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName)
-{
-
 }
 
 
@@ -1894,17 +1845,17 @@ void drawSideTableDrawer(glm::mat4 view, glm::mat4 projection, GLuint shaderProg
 }
 
 
-
-
 void drawCoffeeTable(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName)
 {
 
 }
 
+
 void drawBalloons(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName)
 {
 
 }
+
 
 void drawWreath(glm::mat4 view, glm::mat4 projection, GLuint shaderProgramID, GLMesh& gMesh, GLenum textureNum, GLuint textureName)
 {
